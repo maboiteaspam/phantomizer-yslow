@@ -40,7 +40,11 @@ http://github.com/maboiteaspam/phantomizer
 
 http://maboiteaspam.github.io/phantomizer-yslow/
 
-http://maboiteaspam.github.io/phantomizer-yslow/documentation/build.html
+http://maboiteaspam.github.io/phantomizer-yslow/documentation/main.html
+
+http://maboiteaspam.github.io/phantomizer-yslow/documentation/webserver.html
+
+http://maboiteaspam.github.io/phantomizer-yslow/documentation/tests.html
 
 
 ## Release History
