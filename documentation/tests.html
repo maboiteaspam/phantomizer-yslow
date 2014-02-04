@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>tests.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <link rel="stylesheet" media="all" href="public/stylesheets/normalize.css" />
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page">
+
+      <div class="header">
+        
+          <h1>tests.js</h1>
+        
+
+        
+          <div class="toc">
+            <h3>Table of Contents</h3>
+            <ol>
+              
+                
+                <li>
+                  <a class="source" href="main.html">
+                    main.js
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="webserver.html">
+                    webserver.js
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="tests.html">
+                    tests.js
+                  </a>
+                </li>
+              
+            </ol>
+          </div>
+        
+      </div>
+
+      
+        
+        
+        
+          <div class='highlight'><pre><span class="hljs-pi">'use strict'</span>;
+
+<span class="hljs-keyword">var</span> should = <span class="hljs-built_in">require</span>(<span class="hljs-string">'should'</span>);
+<span class="hljs-keyword">var</span> grunt = <span class="hljs-built_in">require</span>(<span class="hljs-string">'grunt'</span>);
+<span class="hljs-keyword">var</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>);
+<span class="hljs-keyword">var</span> express = <span class="hljs-built_in">require</span>(<span class="hljs-string">'express'</span>);
+<span class="hljs-keyword">var</span> log = <span class="hljs-built_in">require</span>(<span class="hljs-string">'npmlog'</span>);
+
+log.level = <span class="hljs-string">"info"</span>;
+log.level = <span class="hljs-string">"log"</span>;
+log.level = <span class="hljs-string">"silent"</span>;</pre></div>
+        
+      
+        
+        <h2 id="phantomizer-yslow-test-suite">phantomizer-yslow test suite</h2>
+
+        
+      
+        
+        
+        
+          <div class='highlight'><pre><span class="hljs-keyword">var</span> www_dir = __dirname + <span class="hljs-string">'/www'</span>;
+<span class="hljs-keyword">var</span> app_server;
+
+describe(<span class="hljs-string">'phantomizer-yslow tests'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span></pre></div>
+        
+      
+        
+        <p><strong>Open a webserver</strong></p>
+
+        
+          <div class='highlight'><pre>  before(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+    <span class="hljs-keyword">var</span> app = express();
+    <span class="hljs-keyword">if</span>( log.level == <span class="hljs-string">"info"</span> ) app.use(express.logger());
+    app.use(express.static(www_dir));
+    app_server = http.createServer(app).listen(<span class="hljs-number">8080</span>);
+  });</pre></div>
+        
+      
+        
+        <p><strong>Close the webserver</strong></p>
+
+        
+          <div class='highlight'><pre>  after(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span>{</span></pre></div>
+        
+      
+        
+        <p>clean output
+grunt.file.delete(“output/“);</p>
+
+        
+          <div class='highlight'><pre>    app_server.close(done);
+  });</pre></div>
+        
+      
+        
+        <p><strong>test node module</strong></p>
+
+        
+          <div class='highlight'><pre>  it(<span class="hljs-string">'should expose the wrappers path correctly'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span> {</span>
+    <span class="hljs-keyword">var</span> yslow = <span class="hljs-built_in">require</span>(<span class="hljs-string">"../lib/main.js"</span>);
+    <span class="hljs-keyword">for</span>( <span class="hljs-keyword">var</span> n <span class="hljs-keyword">in</span> yslow ){
+      grunt.file.exists(yslow[n]).should.be.eql(<span class="hljs-literal">true</span>,n+<span class="hljs-string">' has wrong file path : '</span>+yslow[n]);
+      grunt.file.read(yslow[n]).length.should.be.greaterThan(<span class="hljs-number">0</span>,n+<span class="hljs-string">' is an empty file : '</span>+yslow[n]);
+    }
+  });</pre></div>
+        
+      
+        
+        <p><strong>test phantomjs node module integration</strong></p>
+
+        
+          <div class='highlight'><pre>  it(<span class="hljs-string">'should display the version number'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    <span class="hljs-keyword">var</span> yslow = <span class="hljs-built_in">require</span>(<span class="hljs-string">"../lib/main.js"</span>);
+    run_phantomjs([yslow.path, <span class="hljs-string">"--version"</span>],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span></pre></div>
+        
+      
+        
+        <p>version number is something like 3.1.8</p>
+
+        
+          <div class='highlight'><pre>      stdout.should.not.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/[0-9]+.[0-9]+.[0-9]+/</span>);
+      done();
+    });
+  });
+  <span class="hljs-keyword">var</span> url = <span class="hljs-string">"http://localhost:8080/index.html"</span>;
+  it(<span class="hljs-string">'should display the output'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    <span class="hljs-keyword">var</span> yslow = <span class="hljs-built_in">require</span>(<span class="hljs-string">"../lib/main.js"</span>);
+    run_phantomjs([yslow.path, url],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span></pre></div>
+        
+      
+        
+        <p>output is a big bunch of json</p>
+
+        
+          <div class='highlight'><pre>      stdout.should.not.be.empty;
+      <span class="hljs-keyword">var</span> j = <span class="hljs-built_in">JSON</span>.parse(stdout);
+      j.should.have.properties([<span class="hljs-string">'v'</span>,<span class="hljs-string">'w'</span>]);
+      done();
+    });
+  });
+
+});</pre></div>
+        
+      
+        
+        <h2 id="helper-functions">helper functions</h2>
+
+        
+      
+        
+        <p>spawns a new phantomjs process</p>
+
+        
+          <div class='highlight'><pre><span class="hljs-keyword">var</span> phantomjs = <span class="hljs-built_in">require</span>(<span class="hljs-string">'phantomjs'</span>);
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">run_phantomjs</span><span class="hljs-params">(args,cb)</span>{</span>
+  <span class="hljs-keyword">var</span> stdout = <span class="hljs-string">""</span>;
+  <span class="hljs-keyword">var</span> stderr = <span class="hljs-string">""</span>;
+  <span class="hljs-keyword">var</span> phantomjs_process = <span class="hljs-built_in">require</span>(<span class="hljs-string">'child_process'</span>).spawn(phantomjs.path, args);</pre></div>
+        
+      
+        
+        <p>with live output piping</p>
+
+        
+          <div class='highlight'><pre>  phantomjs_process.stdout.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
+    log.info(<span class="hljs-string">'stdout'</span>, <span class="hljs-string">''</span>, data.toString());
+    stdout+=data.toString();
+  });
+  phantomjs_process.stderr.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
+    log.info(<span class="hljs-string">'stderr'</span>, <span class="hljs-string">''</span>, data.toString());
+    stderr+=data.toString();
+  });</pre></div>
+        
+      
+        
+        <p>and callback on exit process</p>
+
+        
+          <div class='highlight'><pre>  phantomjs_process.on(<span class="hljs-string">'exit'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(code)</span> {</span>
+    <span class="hljs-keyword">if</span>(cb) cb(code,stdout,stderr);
+  });
+  <span class="hljs-keyword">return</span> phantomjs_process;
+}</pre></div>
+        
+      
+      <div class="fleur">h</div>
+    </div>
+  </div>
+</body>
+</html>
