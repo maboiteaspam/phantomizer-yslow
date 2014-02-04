@@ -7,7 +7,8 @@ module.exports = function(grunt) {
       debug: {
         src: [
           'lib/main.js',
-          'lib/webserver.js'
+          'lib/webserver.js',
+          'test/tests.js'
         ],
         options: {
           layout:'linear',
