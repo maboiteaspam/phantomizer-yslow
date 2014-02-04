@@ -6,8 +6,9 @@ var http = require('http');
 var express = require('express');
 var log = require('npmlog');
 
-log.level = "silent";
 log.level = "info";
+log.level = "log";
+log.level = "silent";
 
 var www_dir = __dirname + '/www';
 var app_server;
@@ -16,30 +17,38 @@ describe('phantomizer-yslow tests', function () {
 
   before(function(){
     var app = express();
-    if( log.level !== "silent" ) app.use(express.logger());
+    if( log.level == "info" ) app.use(express.logger());
     app.use(express.static(www_dir));
     app_server = http.createServer(app).listen(8080);
   });
 
   after(function(done){
-    grunt.file.delete("output/");
+    //grunt.file.delete("output/");
     app_server.close(done);
   });
 
   it('should expose the wrappers path correctly', function() {
-    var loadreport = require("../lib/main.js");
-    for( var n in loadreport ){
-      grunt.file.exists(loadreport[n]).should.be.eql(true,n+' has wrong file path : '+loadreport[n]);
-      grunt.file.read(loadreport[n]).length.should.be.greaterThan(0,n+' is an empty file : '+loadreport[n]);
+    var yslow = require("../lib/main.js");
+    for( var n in yslow ){
+      grunt.file.exists(yslow[n]).should.be.eql(true,n+' has wrong file path : '+yslow[n]);
+      grunt.file.read(yslow[n]).length.should.be.greaterThan(0,n+' is an empty file : '+yslow[n]);
     }
+  });
+  it('should display the version number', function(done) {
+    var yslow = require("../lib/main.js");
+    run_phantomjs([yslow.path, "--version"],function(code,stdout,stderr){
+      stdout.should.not.be.empty;
+      stdout.should.match(/[0-9]+.[0-9]+.[0-9]+/);
+      done();
+    });
   });
   var url = "http://localhost:8080/index.html";
   it('should display the output', function(done) {
-    var loadreport = require("../lib/main.js");
-    run_phantomjs([loadreport.path, url],function(code,stdout,stderr){
-      stdout.should.match(/(DOMContentLoaded)/);
-      stdout.should.match(/(onload)/);
-      stdout.should.match(/(Elapsed load time:\s+[0-9]+ms)/);
+    var yslow = require("../lib/main.js");
+    run_phantomjs([yslow.path, url],function(code,stdout,stderr){
+      stdout.should.not.be.empty;
+      var j = JSON.parse(stdout);
+      j.should.have.properties(['v','w']);
       done();
     });
   });
