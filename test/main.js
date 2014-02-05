@@ -10,7 +10,7 @@ log.level = "info";
 log.level = "log";
 log.level = "silent";
 
-// phantomizer-yslow test suite
+// phantomizer-yslow main.js test suite
 // ------
 var www_dir = __dirname + '/www';
 var app_server;

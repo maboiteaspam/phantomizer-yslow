@@ -6,16 +6,65 @@ module.exports = function(grunt) {
 
   var childProcess = require('child_process');
   var phantomjs = require('phantomjs');
-  var yslow = require('yslow');
+  var yslow = require('../lib/main.js');
   var ph_libutil = require("phantomizer-libutil");
+
+  grunt.registerMultiTask("yslow",
+    "Measure page loading times with YSlow", function () {
+
+      var options = this.options({
+        urls:[],
+
+        // specify the information to display/log (basic|grade|stats|comps|all) [all]
+        info:'all',
+        // specify the output results format (json|xml|plain|tap|junit) [json]
+        format:'json',
+        // specify the YSlow performance ruleset to be used (ydefault|yslow1|yblog) [ydefault]
+        ruleset:'ydefault',
+        // specify an URL to log the results
+        beacon:null,
+        // include dictionary of results fields
+        dict:null,
+        // for test formats, the threshold to test scores ([0-100]|[A-F]|{JSON}) [80]
+        threshold:'80',
+        // specify the user agent string sent to server when the page requests resources
+        ua:null,
+        // specify page viewport size WxY, where W = width and H = height [400x300]
+        viewport:'400x300',
+        // specify custom request headers, e.g.: -ch '{"Cookie": "foo=bar"}'
+        headers:null,
+        // output page console messages (0: none, 1: message, 2: message + line + source) [0]
+        console:'0',
+        // specify comma separated list of additional CDNs
+        cdns:null,
+        // specify output path
+        output:null
+      });
+
+      var done = this.async();
+
+      var urls = filter_urls(options.urls);
+      grunt.log.ok("Running "+urls);
+
+      var args = forge_yslow_args(options);
+
+      var yslow_process = process_yslow_output(options.format,args,urls,function(responses){
+
+        end_message(urls,responses);
+        write_yslow_output(options.format,options.output,responses);
+
+        done();
+      });
+      yslow_process.stdout.on('data', function (data) {
+        if(options.output=="-"){
+          grunt.log.write(data.toString());
+        }
+      });
+
+    });
 
   grunt.registerMultiTask("phantomizer-yslow",
     "Measure page loading times with YSlow", function () {
-
-      var webserver           = ph_libutil.webserver;
-      var router_factory      = ph_libutil.router;
-      var optimizer_factory   = ph_libutil.optimizer;
-      var meta_factory        = ph_libutil.meta;
 
       var options = this.options({
         web_server_paths:[],
@@ -63,22 +112,18 @@ module.exports = function(grunt) {
 
 
       var done = this.async();
-      var finish = function(stderr,stdout){
-        if( stderr != "" ){
-          grunt.log.warn( "phantomjs error" );
-          grunt.log.warn( stderr );
-        } else {
-          grunt.log.writeln(stdout);
-        }
-        if(webserver.stop) webserver.stop();
-        done();
-      }
 
+      var webserver           = ph_libutil.webserver;
+      var router_factory      = ph_libutil.router;
+      var optimizer_factory   = ph_libutil.optimizer;
+      var meta_factory        = ph_libutil.meta;
 
       var config = grunt.config.get();
+
       var meta_manager = new meta_factory(process.cwd(), meta_dir);
       var optimizer = new optimizer_factory(meta_manager, config, grunt);
       var router = new router_factory(config.routing);
+
       router.load(function(){
 
         if( host+port+ssl_port != '' ){
@@ -90,43 +135,179 @@ module.exports = function(grunt) {
           webserver.start(port, ssl_port, host);
         }
 
-        grunt.log.ok("Running "+options.urls);
+        var urls = filter_urls(options.urls);
+        grunt.log.ok("Running "+urls);
+        var args = forge_yslow_args(options);
 
-        var known_switchs = [
-          'info',
-          'format',
-          'ruleset',
-          'beacon',
-          'dict',
-          'threshold',
-          'ua',
-          'viewport',
-          'headers',
-          'console',
-          'cdns'
-        ];
-        var args = [];
-        for( var n in known_switchs ){
-          if( known_switchs[n] ){
-            args.push("--"+n);
-            args.push(options[n]);
+        var yslow_process = process_yslow_output(options.format,args,urls,function(responses){
+
+          end_message(urls,responses);
+          write_yslow_output(options.format,options.output,responses);
+          done();
+        });
+        yslow_process.stdout.on('data', function (data) {
+          if(options.output=="-"){
+            grunt.log.write(data.toString());
           }
-        }
-        for( var n in options.urls ){
-          args.push(options.urls[n]);
-        }
+        });
 
-        run_phantomjs(args,finish);
       });
 
     });
 
+  function filter_urls(urls){
+    var retour = [];
+    for( var n in urls ){
+      if( urls[n] && retour.indexOf(urls[n]) == -1 ){
+        retour.push(urls[n])
+      }
+    }
+    return retour;
+  }
+  function forge_yslow_args(options){
+    var known_switchs = [
+      'info',
+      'format',
+      'ruleset',
+      'beacon',
+      'dict',
+      'threshold',
+      'ua',
+      'viewport',
+      'headers',
+      'console',
+      'cdns'
+    ];
+    var args = [];
+    for( var n in options ){
+      if( known_switchs.indexOf(n)>-1
+        && options[n] !== undefined
+        && options[n] !== null ){
+        args.push("--"+n);
+        args.push(options[n]);
+      }
+    }
+    return args;
+  }
+  function end_message(urls,responses){
+    grunt.log.ok("Parsed: "+urls.length+"/"+responses.length);
+
+    if( urls.length !== responses.length ){
+      grunt.log.error("report bug to");
+      grunt.log.error("https://github.com/maboiteaspam/phantomizer-yslow/issues");
+      grunt.fail.warn("could not parse correctly yslow output");
+    }
+  }
+  function write_yslow_output(format,output,responses){
+    if(output!="-"&&output!=null){
+      if( format.match(/(junit|tap)/) ){
+        var content = "";
+        for(var n in responses ){
+          content+=responses[n].response;
+          content+="\r\n\r\n";
+        }
+        var filep = output+"/report."+format;
+        grunt.file.delete(filep);
+        grunt.file.write(filep, content);
+        grunt.log.ok(filep);
+      }else{
+        for(var n in responses ){
+          var url = responses[n].url;
+          url = url.replace(/(http|https):\/\//,"$1_");
+          url = url.replace(/:([0-9]+)/,"_$1");
+          url = url.replace(/\//,"-");
+          url += "."+format;
+          var filep = output+"/"+url;
+          grunt.file.write(filep, responses[n].response);
+          grunt.log.ok(filep);
+        }
+      }
+    }
+  }
+  function process_yslow_output(format,args,urls, then){
+    var responses = [];
+    var current_response = "";
+
+    for( var n in urls ){
+      args.push(urls[n]);
+    }
+    var phantomjs_process = run_phantomjs(args,function(stderr,stdout){
+
+      if( current_response != "" ){
+        var found_url = match_yslow_response_url(format,urls,current_response);
+        if( found_url == false ){
+          found_url = urls[ responses.length ];
+          grunt.log.error("URL not found "+found_url);
+        }
+        responses.push({url:found_url,response:current_response});
+        current_response="";
+      }
+
+      if( then ) then(responses);
+    });
+    var formats = {
+      'xml':/(<response><Date>[A-Za-z]+, [0-9]+ [A-Za-z]+ [0-9]+ [0-9]+:[0-9]+:[0-9]+ GMT\s)/,
+      'json':/([}]\s)/,
+      'tap':/(TAP version 13\s)/,
+      'plain':/version:\s+/i,
+      'junit':/(<\/testsuites>\s)/
+    };
+    phantomjs_process.stdout.on('data', function (data) {
+      current_response+=data.toString();
+
+      for( var f in formats ){
+        if( format == f && current_response.match(formats[f]) ){
+          var found_url = match_yslow_response_url(format,urls,current_response);
+          if( found_url == false ){
+            found_url = urls[ responses.length ];
+            grunt.log.error("URL not found "+found_url);
+          }
+          responses.push({url:found_url,response:current_response});
+          current_response="";
+
+        }
+      }
+    });
+
+    return phantomjs_process;
+  }
+  function match_yslow_response_url(format,urls,response){
+    var found_url = false;
+    if( format == "json" ){
+      var c = JSON.parse(response);
+      found_url = decodeURIComponent(c.u);
+    }else if( format == "xml" ){
+      found_url = response.match(/<u>([^<]+)<\/u>/)[1];
+    }else if( format == "plain" ){
+      var t = response.match(/^.*((\r\n|\n|\r)|$)/gm);
+      if(t.length > 3 && t[3].match(/url:\s+.+/) ){
+        found_url = t[3].match(/url:\s+(.+)/)[1];
+      }
+    }
+    return found_url;
+  }
   function run_phantomjs(args,then){
 
     args.unshift(yslow.path);
 
-    childProcess.execFile(phantomjs.path, args, function(err, stdout, stderr) {
+    var stdout = "";
+    var stderr = "";
+
+    var pantomjs_process = require('child_process').spawn(phantomjs.path, args);
+    // with live output piping
+    pantomjs_process.stdout.on('data', function (data) {
+      stdout+=data.toString();
+      grunt.verbose.write(data.toString());
+    });
+    pantomjs_process.stderr.on('data', function (data) {
+      stderr+=data.toString();
+      grunt.log.error(stderr);
+    });
+    // and callback on exit process
+    pantomjs_process.on('exit', function (code) {
       if(then) then(stderr,stdout);
-    })
+    });
+
+    return pantomjs_process;
   }
 };
