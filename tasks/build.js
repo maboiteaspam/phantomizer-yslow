@@ -108,6 +108,8 @@ module.exports = function(grunt) {
         cdns:null,
         // produce human friendly output
         readable:false,
+        // specify output path
+        output:null,
 
         meta_dir:''
       });
