@@ -6,9 +6,9 @@ var http = require('http');
 var express = require('express');
 var log = require('npmlog');
 
-log.level = "log";
 log.level = "silent";
 log.level = "info";
+log.level = "log";
 
 // phantomizer-yslow grunt task test suite
 // ------

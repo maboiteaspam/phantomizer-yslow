@@ -235,6 +235,8 @@ module.exports = function(grunt) {
         if( found_url == false ){
           found_url = urls[ responses.length ];
           grunt.log.error("URL not found "+found_url);
+        }else{
+          grunt.log.writeln("URL found "+found_url);
         }
         responses.push({url:found_url,response:current_response});
         current_response="";
@@ -258,6 +260,8 @@ module.exports = function(grunt) {
           if( found_url == false ){
             found_url = urls[ responses.length ];
             grunt.log.error("URL not found "+found_url);
+          }else{
+            grunt.log.writeln("URL found "+found_url);
           }
           responses.push({url:found_url,response:current_response});
           current_response="";
