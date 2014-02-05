@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>build.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <link rel="stylesheet" media="all" href="public/stylesheets/normalize.css" />
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page">
+
+      <div class="header">
+        
+          <h1>build.js</h1>
+        
+
+        
+          <div class="toc">
+            <h3>Table of Contents</h3>
+            <ol>
+              
+                
+                <li>
+                  <a class="source" href="main.html">
+                    main.js
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="webserver.html">
+                    webserver.js
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="build.html">
+                    build.js
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="grunt.html">
+                    grunt.js
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="node_module.html">
+                    node_module.js
+                  </a>
+                </li>
+              
+            </ol>
+          </div>
+        
+      </div>
+
+      
+        
+        
+        
+          <div class='highlight'><pre><span class="hljs-pi">'use strict'</span>;
+
+module.exports = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(grunt)</span> {</span>
+
+  <span class="hljs-keyword">var</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">"fs"</span>);
+
+  <span class="hljs-keyword">var</span> childProcess = <span class="hljs-built_in">require</span>(<span class="hljs-string">'child_process'</span>);
+  <span class="hljs-keyword">var</span> phantomjs = <span class="hljs-built_in">require</span>(<span class="hljs-string">'phantomjs'</span>);
+  <span class="hljs-keyword">var</span> yslow = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../lib/main.js'</span>);
+  <span class="hljs-keyword">var</span> ph_libutil = <span class="hljs-built_in">require</span>(<span class="hljs-string">"phantomizer-libutil"</span>);
+  <span class="hljs-keyword">var</span> url_parser = <span class="hljs-built_in">require</span>(<span class="hljs-string">'url'</span>);</pre></div>
+        
+      
+        
+        <h2 id="yslow-runner">yslow runner</h2>
+
+        
+      
+        
+        <p>use it for any project</p>
+
+        
+          <div class='highlight'><pre>  grunt.registerMultiTask(<span class="hljs-string">"yslow"</span>,
+    <span class="hljs-string">"Measure page loading times with YSlow"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+
+      <span class="hljs-keyword">var</span> options = <span class="hljs-keyword">this</span>.options({
+        urls:[],</pre></div>
+        
+      
+        
+        <p>specify the information to display/log (basic|grade|stats|comps|all) [all]</p>
+
+        
+          <div class='highlight'><pre>        info:<span class="hljs-string">'all'</span>,</pre></div>
+        
+      
+        
+        <p>specify the output results format (json|xml|plain|tap|junit) [json]</p>
+
+        
+          <div class='highlight'><pre>        format:<span class="hljs-string">'json'</span>,</pre></div>
+        
+      
+        
+        <p>specify the YSlow performance ruleset to be used (ydefault|yslow1|yblog) [ydefault]</p>
+
+        
+          <div class='highlight'><pre>        ruleset:<span class="hljs-string">'ydefault'</span>,</pre></div>
+        
+      
+        
+        <p>specify an URL to log the results</p>
+
+        
+          <div class='highlight'><pre>        beacon:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>include dictionary of results fields</p>
+
+        
+          <div class='highlight'><pre>        dict:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>for test formats, the threshold to test scores ([0-100]|[A-F]|{JSON}) [80]</p>
+
+        
+          <div class='highlight'><pre>        threshold:<span class="hljs-string">'80'</span>,</pre></div>
+        
+      
+        
+        <p>specify the user agent string sent to server when the page requests resources</p>
+
+        
+          <div class='highlight'><pre>        ua:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>specify page viewport size WxY, where W = width and H = height [400x300]</p>
+
+        
+          <div class='highlight'><pre>        viewport:<span class="hljs-string">'400x300'</span>,</pre></div>
+        
+      
+        
+        <p>specify custom request headers, e.g.: -ch ‘{“Cookie”: “foo=bar”}’</p>
+
+        
+          <div class='highlight'><pre>        headers:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>output page console messages (0: none, 1: message, 2: message + line + source) [0]</p>
+
+        
+          <div class='highlight'><pre>        console:<span class="hljs-string">'0'</span>,</pre></div>
+        
+      
+        
+        <p>specify comma separated list of additional CDNs</p>
+
+        
+          <div class='highlight'><pre>        cdns:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>specify output path</p>
+
+        
+          <div class='highlight'><pre>        output:<span class="hljs-literal">null</span>
+      });
+
+      <span class="hljs-keyword">var</span> done = <span class="hljs-keyword">this</span>.async();
+
+      <span class="hljs-keyword">var</span> urls = unique_urls(options.urls);
+      grunt.log.ok(<span class="hljs-string">"Running "</span>+urls);
+
+      <span class="hljs-keyword">var</span> args = forge_yslow_args(options);
+
+      <span class="hljs-keyword">var</span> yslow_process = process_yslow_output(options.format,args,urls,<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(responses)</span>{</span>
+
+        end_message(urls,responses);
+        write_yslow_output(options.format,options.output,responses);
+
+        done();
+      });
+      yslow_process.stdout.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
+        <span class="hljs-keyword">if</span>(options.output==<span class="hljs-string">"-"</span>){
+          grunt.log.write(data.toString());
+        }
+      });
+
+    });</pre></div>
+        
+      
+        
+        <h2 id="yslow-phantomizer">yslow phantomizer</h2>
+
+        
+      
+        
+        <p>specific to phantomizer projects</p>
+
+        
+          <div class='highlight'><pre>  grunt.registerMultiTask(<span class="hljs-string">"phantomizer-yslow"</span>,
+    <span class="hljs-string">"Measure page loading times with YSlow"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+
+      <span class="hljs-keyword">var</span> options = <span class="hljs-keyword">this</span>.options({
+        web_server_paths:[],
+        urls:[],
+        host:<span class="hljs-string">'localhost'</span>,
+        port:<span class="hljs-string">''</span>,
+        ssl_port:<span class="hljs-string">''</span>,
+        web_server_log:<span class="hljs-literal">false</span>,
+        inject_assets:<span class="hljs-literal">true</span>,</pre></div>
+        
+      
+        
+        <p>specify the information to display/log (basic|grade|stats|comps|all) [all]</p>
+
+        
+          <div class='highlight'><pre>        info:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>specify the output results format (json|xml|plain|tap|junit) [json]</p>
+
+        
+          <div class='highlight'><pre>        format:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>specify the YSlow performance ruleset to be used (ydefault|yslow1|yblog) [ydefault]</p>
+
+        
+          <div class='highlight'><pre>        ruleset:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>specify an URL to log the results</p>
+
+        
+          <div class='highlight'><pre>        beacon:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>include dictionary of results fields</p>
+
+        
+          <div class='highlight'><pre>        dict:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>for test formats, the threshold to test scores ([0-100]|[A-F]|{JSON}) [80]</p>
+
+        
+          <div class='highlight'><pre>        threshold:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>specify the user agent string sent to server when the page requests resources</p>
+
+        
+          <div class='highlight'><pre>        ua:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>specify page viewport size WxY, where W = width and H = height [400x300]</p>
+
+        
+          <div class='highlight'><pre>        viewport:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>specify custom request headers, e.g.: -ch ‘{“Cookie”: “foo=bar”}’</p>
+
+        
+          <div class='highlight'><pre>        headers:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>output page console messages (0: none, 1: message, 2: message + line + source) [0]</p>
+
+        
+          <div class='highlight'><pre>        console:<span class="hljs-literal">null</span>,</pre></div>
+        
+      
+        
+        <p>specify comma separated list of additional CDNs</p>
+
+        
+          <div class='highlight'><pre>        cdns:<span class="hljs-literal">null</span>,
+
+        meta_dir:<span class="hljs-string">''</span>
+      });
+
+      <span class="hljs-keyword">var</span> web_server_paths = options.web_server_paths;
+      <span class="hljs-keyword">var</span> host = options.host;
+      <span class="hljs-keyword">var</span> port = options.port?options.port:<span class="hljs-string">""</span>;
+      <span class="hljs-keyword">var</span> ssl_port = options.ssl_port?options.ssl_port:<span class="hljs-string">""</span>;
+      <span class="hljs-keyword">var</span> web_server_log = options.web_server_log;
+      <span class="hljs-keyword">var</span> inject_assets = options.inject_assets;
+
+      <span class="hljs-keyword">var</span> meta_dir = options.meta_dir;
+
+
+      <span class="hljs-keyword">var</span> done = <span class="hljs-keyword">this</span>.async();
+
+      <span class="hljs-keyword">var</span> webserver           = ph_libutil.webserver;
+      <span class="hljs-keyword">var</span> router_factory      = ph_libutil.router;
+      <span class="hljs-keyword">var</span> optimizer_factory   = ph_libutil.optimizer;
+      <span class="hljs-keyword">var</span> meta_factory        = ph_libutil.meta;
+
+      <span class="hljs-keyword">var</span> config = grunt.config.get();
+
+      <span class="hljs-keyword">var</span> meta_manager = <span class="hljs-keyword">new</span> meta_factory(process.cwd(), meta_dir);
+      <span class="hljs-keyword">var</span> optimizer = <span class="hljs-keyword">new</span> optimizer_factory(meta_manager, config, grunt);
+      <span class="hljs-keyword">var</span> router = <span class="hljs-keyword">new</span> router_factory(config.routing);
+
+      router.load(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+
+        <span class="hljs-keyword">if</span>( host+port+ssl_port != <span class="hljs-string">''</span> ){
+          webserver = <span class="hljs-keyword">new</span> webserver(router,optimizer,meta_manager,grunt, web_server_paths);
+          webserver.enable_dashboard(<span class="hljs-literal">false</span>);
+          webserver.enable_build(<span class="hljs-literal">false</span>);
+          webserver.enable_assets_inject(inject_assets);
+
+          webserver.start(port, ssl_port, host);
+        }
+
+        <span class="hljs-keyword">var</span> urls = unique_urls(options.urls);
+        grunt.log.ok(<span class="hljs-string">"Running "</span>+urls);
+        <span class="hljs-keyword">var</span> args = forge_yslow_args(options);
+
+        <span class="hljs-keyword">var</span> yslow_process = process_yslow_output(options.format,args,urls,<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(responses)</span>{</span>
+
+          end_message(urls,responses);
+          write_yslow_output(options.format,options.output,responses);
+          done();
+        });
+        yslow_process.stdout.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
+          <span class="hljs-keyword">if</span>(options.output==<span class="hljs-string">"-"</span>){
+            grunt.log.write(data.toString());
+          }
+        });
+
+      });
+
+    });</pre></div>
+        
+      
+        
+        <h2 id="helper-functions">helper functions</h2>
+
+        
+      
+        
+        
+        
+          <div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">unique_urls</span><span class="hljs-params">(urls)</span>{</span>
+    <span class="hljs-keyword">var</span> retour = [];
+    <span class="hljs-keyword">for</span>( <span class="hljs-keyword">var</span> n <span class="hljs-keyword">in</span> urls ){
+      <span class="hljs-keyword">if</span>( urls[n] &amp;&amp; retour.indexOf(urls[n]) == -<span class="hljs-number">1</span> ){
+        retour.push(urls[n])
+      }
+    }
+    <span class="hljs-keyword">return</span> retour;
+  }</pre></div>
+        
+      
+        
+        <p>tranforms options to —[switch] [value]
+does not manage urls</p>
+
+        
+          <div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">forge_yslow_args</span><span class="hljs-params">(options)</span>{</span>
+    <span class="hljs-keyword">var</span> known_switchs = [
+      <span class="hljs-string">'info'</span>,
+      <span class="hljs-string">'format'</span>,
+      <span class="hljs-string">'ruleset'</span>,
+      <span class="hljs-string">'beacon'</span>,
+      <span class="hljs-string">'dict'</span>,
+      <span class="hljs-string">'threshold'</span>,
+      <span class="hljs-string">'ua'</span>,
+      <span class="hljs-string">'viewport'</span>,
+      <span class="hljs-string">'headers'</span>,
+      <span class="hljs-string">'console'</span>,
+      <span class="hljs-string">'cdns'</span>
+    ];
+    <span class="hljs-keyword">var</span> args = [];
+    <span class="hljs-keyword">for</span>( <span class="hljs-keyword">var</span> n <span class="hljs-keyword">in</span> options ){
+      <span class="hljs-keyword">if</span>( known_switchs.indexOf(n)&gt;-<span class="hljs-number">1</span>
+        &amp;&amp; options[n] !== <span class="hljs-literal">undefined</span>
+        &amp;&amp; options[n] !== <span class="hljs-literal">null</span> ){
+        args.push(<span class="hljs-string">"--"</span>+n);
+        args.push(options[n]);
+      }
+    }
+    <span class="hljs-keyword">return</span> args;
+  }</pre></div>
+        
+      
+        
+        <p>grunt task confirmation message</p>
+
+        
+          <div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">end_message</span><span class="hljs-params">(urls,responses)</span>{</span>
+    grunt.log.ok(<span class="hljs-string">"Parsed: "</span>+responses.length+<span class="hljs-string">"/"</span>+urls.length);
+
+    <span class="hljs-keyword">if</span>( urls.length !== responses.length ){
+      grunt.log.error(<span class="hljs-string">"report bug to"</span>);
+      grunt.log.error(<span class="hljs-string">"https://github.com/maboiteaspam/phantomizer-yslow/issues"</span>);
+      grunt.fail.warn(<span class="hljs-string">"could not parse correctly yslow output"</span>);
+    }
+  }</pre></div>
+        
+      
+        
+        <p>write yslow output files after console output parsing</p>
+
+        
+          <div class='highlight'><pre>  <span class="hljs-comment">/**
+   * if output is '-', goes to console
+   * if output is null, displays nothing
+   * if output is junit|tap, records results in some_output_path/report.(junit|tap)
+   * otherwise, records results in some_output_path/some/url_path/url_filename.ext.(xml|json|plain)
+   *
+   * @param format
+   * @param output
+   * @param responses
+   */</span>
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">write_yslow_output</span><span class="hljs-params">(format,output,responses)</span>{</span>
+    <span class="hljs-keyword">if</span>(output!=<span class="hljs-string">"-"</span>&amp;&amp;output!=<span class="hljs-literal">null</span>){
+      <span class="hljs-keyword">if</span>( format.match(<span class="hljs-regexp">/(junit|tap)/</span>) ){
+        <span class="hljs-keyword">var</span> content = <span class="hljs-string">""</span>;
+        <span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> n <span class="hljs-keyword">in</span> responses ){
+          content+=responses[n].response;
+          content+=<span class="hljs-string">"\r\n\r\n"</span>;
+        }
+        <span class="hljs-keyword">var</span> filep = output+<span class="hljs-string">"/report."</span>+format;
+        grunt.file.delete(filep);
+        grunt.file.write(filep, content);
+        grunt.log.ok(filep);
+      }<span class="hljs-keyword">else</span>{
+        <span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> n <span class="hljs-keyword">in</span> responses ){
+          <span class="hljs-keyword">var</span> u = url_parser.parse(responses[n].url);
+          <span class="hljs-keyword">var</span> filep = output+<span class="hljs-string">""</span>+u.path+<span class="hljs-string">"."</span>+format;
+          grunt.file.write(filep, responses[n].response);
+          grunt.log.ok(filep);
+        }
+      }
+    }
+  }</pre></div>
+        
+      
+        
+        <p>calls yslow and parses its output in best way possible</p>
+
+        
+          <div class='highlight'><pre>  <span class="hljs-comment">/**
+   * Returns an array of objects
+   *  responses = [
+   *  {url:'',response:''},
+   *  {url:'',response:''}
+   *  ]
+   *
+   *  Note that junit and tap format
+   *  can not match correctly request to output,
+   *  thus, the url value is not reliable for those two
+   *
+   * @param format (xml|json|plain|tap|junit)
+   * @param args []
+   * @param urls []
+   * @param then callback
+   * @returns {*}
+   */</span>
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">process_yslow_output</span><span class="hljs-params">(format,args,urls, then)</span>{</span>
+    <span class="hljs-keyword">var</span> responses = [];
+    <span class="hljs-keyword">var</span> current_response = <span class="hljs-string">""</span>;
+
+    <span class="hljs-keyword">for</span>( <span class="hljs-keyword">var</span> n <span class="hljs-keyword">in</span> urls ){
+      args.push(urls[n]);
+    }
+    <span class="hljs-keyword">var</span> phantomjs_process = run_phantomjs(args,<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(stderr,stdout)</span>{</span>
+
+      <span class="hljs-keyword">if</span>( current_response != <span class="hljs-string">""</span> ){
+        <span class="hljs-keyword">var</span> found_url = match_yslow_response_url(format,urls,current_response);
+        <span class="hljs-keyword">if</span>( found_url == <span class="hljs-literal">false</span> ){
+          found_url = urls[ responses.length ];
+          grunt.log.error(<span class="hljs-string">"URL not found "</span>+found_url);
+        }<span class="hljs-keyword">else</span>{
+          grunt.log.writeln(<span class="hljs-string">"URL found "</span>+found_url);
+        }
+        responses.push({url:found_url,response:current_response});
+        current_response=<span class="hljs-string">""</span>;
+      }
+
+      <span class="hljs-keyword">if</span>( then ) then(responses);
+    });
+    <span class="hljs-keyword">var</span> formats = {
+      <span class="hljs-string">'xml'</span>:<span class="hljs-regexp">/(&lt;response&gt;&lt;Date&gt;[A-Za-z]+, [0-9]+ [A-Za-z]+ [0-9]+ [0-9]+:[0-9]+:[0-9]+ GMT\s)/</span>,
+      <span class="hljs-string">'json'</span>:<span class="hljs-regexp">/([}]\s)/</span>,
+      <span class="hljs-string">'tap'</span>:<span class="hljs-regexp">/(TAP version 13\s)/</span>,
+      <span class="hljs-string">'plain'</span>:<span class="hljs-regexp">/version:\s+/i</span>,
+      <span class="hljs-string">'junit'</span>:<span class="hljs-regexp">/(&lt;\/testsuites&gt;\s)/</span>
+    };
+    phantomjs_process.stdout.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
+      current_response+=data.toString();
+
+      <span class="hljs-keyword">for</span>( <span class="hljs-keyword">var</span> f <span class="hljs-keyword">in</span> formats ){
+        <span class="hljs-keyword">if</span>( format == f &amp;&amp; current_response.match(formats[f]) ){
+          <span class="hljs-keyword">var</span> found_url = match_yslow_response_url(format,urls,current_response);
+          <span class="hljs-keyword">if</span>( found_url == <span class="hljs-literal">false</span> ){
+            found_url = urls[ responses.length ];
+            grunt.log.error(<span class="hljs-string">"URL not found "</span>+found_url);
+          }<span class="hljs-keyword">else</span>{
+            grunt.log.writeln(<span class="hljs-string">"URL found "</span>+found_url);
+          }
+          responses.push({url:found_url,response:current_response});
+          current_response=<span class="hljs-string">""</span>;
+
+        }
+      }
+    });
+
+    <span class="hljs-keyword">return</span> phantomjs_process;
+  }</pre></div>
+        
+      
+        
+        <p>parses and output and returns the associate url, when possible</p>
+
+        
+          <div class='highlight'><pre>  <span class="hljs-comment">/**
+   * tap and junit returns false
+   *
+   * @param format (xml|json|plain|tap|junit)
+   * @param urls []
+   * @param response ''
+   * @returns {boolean}
+   */</span>
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">match_yslow_response_url</span><span class="hljs-params">(format,urls,response)</span>{</span>
+    <span class="hljs-keyword">var</span> found_url = <span class="hljs-literal">false</span>;
+    <span class="hljs-keyword">if</span>( format == <span class="hljs-string">"json"</span> ){
+      <span class="hljs-keyword">var</span> c = <span class="hljs-built_in">JSON</span>.parse(response);
+      found_url = <span class="hljs-built_in">decodeURIComponent</span>(c.u);
+    }<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>( format == <span class="hljs-string">"xml"</span> ){
+      found_url = response.match(<span class="hljs-regexp">/&lt;u&gt;([^&lt;]+)&lt;\/u&gt;/</span>)[<span class="hljs-number">1</span>];
+    }<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>( format == <span class="hljs-string">"plain"</span> ){
+      <span class="hljs-keyword">var</span> t = response.match(<span class="hljs-regexp">/^.*((\r\n|\n|\r)|$)/gm</span>);
+      <span class="hljs-keyword">if</span>(t.length &gt; <span class="hljs-number">3</span> &amp;&amp; t[<span class="hljs-number">3</span>].match(<span class="hljs-regexp">/url:\s+.+/</span>) ){
+        found_url = t[<span class="hljs-number">3</span>].match(<span class="hljs-regexp">/url:\s+(.+)/</span>)[<span class="hljs-number">1</span>];
+      }
+    }
+    <span class="hljs-keyword">return</span> found_url;
+  }</pre></div>
+        
+      
+        
+        <p>runs phantomjs and pipes output to grunt</p>
+
+        
+          <div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">run_phantomjs</span><span class="hljs-params">(args,then)</span>{</span>
+
+    args.unshift(yslow.path);
+
+    <span class="hljs-keyword">var</span> stdout = <span class="hljs-string">""</span>;
+    <span class="hljs-keyword">var</span> stderr = <span class="hljs-string">""</span>;
+
+    grunt.log.write(phantomjs.path+<span class="hljs-string">" "</span>+args.join(<span class="hljs-string">" "</span>));
+    <span class="hljs-keyword">var</span> pantomjs_process = <span class="hljs-built_in">require</span>(<span class="hljs-string">'child_process'</span>).spawn(phantomjs.path, args);</pre></div>
+        
+      
+        
+        <p>with live output piping</p>
+
+        
+          <div class='highlight'><pre>    pantomjs_process.stdout.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
+      stdout+=data.toString();
+      grunt.verbose.write(data.toString());
+    });
+    pantomjs_process.stderr.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
+      stderr+=data.toString();
+      grunt.log.error(stderr);
+    });</pre></div>
+        
+      
+        
+        <p>and callback on exit process</p>
+
+        
+          <div class='highlight'><pre>    pantomjs_process.on(<span class="hljs-string">'exit'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(code)</span> {</span>
+      <span class="hljs-keyword">if</span>(then) then(stderr,stdout);
+    });
+
+    <span class="hljs-keyword">return</span> pantomjs_process;
+  }
+};</pre></div>
+        
+      
+      <div class="fleur">h</div>
+    </div>
+  </div>
+</body>
+</html>

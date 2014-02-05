@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>grunt.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <link rel="stylesheet" media="all" href="public/stylesheets/normalize.css" />
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page">
+
+      <div class="header">
+        
+          <h1>grunt.js</h1>
+        
+
+        
+          <div class="toc">
+            <h3>Table of Contents</h3>
+            <ol>
+              
+                
+                <li>
+                  <a class="source" href="main.html">
+                    main.js
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="webserver.html">
+                    webserver.js
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="build.html">
+                    build.js
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="grunt.html">
+                    grunt.js
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="node_module.html">
+                    node_module.js
+                  </a>
+                </li>
+              
+            </ol>
+          </div>
+        
+      </div>
+
+      
+        
+        
+        
+          <div class='highlight'><pre><span class="hljs-pi">'use strict'</span>;
+
+<span class="hljs-keyword">var</span> should = <span class="hljs-built_in">require</span>(<span class="hljs-string">'should'</span>);
+<span class="hljs-keyword">var</span> grunt = <span class="hljs-built_in">require</span>(<span class="hljs-string">'grunt'</span>);
+<span class="hljs-keyword">var</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>);
+<span class="hljs-keyword">var</span> express = <span class="hljs-built_in">require</span>(<span class="hljs-string">'express'</span>);
+<span class="hljs-keyword">var</span> log = <span class="hljs-built_in">require</span>(<span class="hljs-string">'npmlog'</span>);
+
+log.level = <span class="hljs-string">"silent"</span>;
+log.level = <span class="hljs-string">"info"</span>;
+log.level = <span class="hljs-string">"log"</span>;</pre></div>
+        
+      
+        
+        <h2 id="phantomizer-yslow-grunt-task-test-suite">phantomizer-yslow grunt task test suite</h2>
+
+        
+      
+        
+        <p>min/max congestion timeout</p>
+
+        
+          <div class='highlight'><pre><span class="hljs-keyword">var</span> with_congestion = [<span class="hljs-number">0</span>,<span class="hljs-number">0</span>];
+with_congestion = [<span class="hljs-number">800</span>,<span class="hljs-number">1000</span>];
+with_congestion = [<span class="hljs-number">0</span>,<span class="hljs-number">0</span>];
+with_congestion = [<span class="hljs-number">300</span>,<span class="hljs-number">1500</span>];</pre></div>
+        
+      
+        
+        <p>url to apply congestion to</p>
+
+        
+          <div class='highlight'><pre><span class="hljs-keyword">var</span> url_congestion = [<span class="hljs-string">"/index2.html"</span>];
+
+<span class="hljs-keyword">var</span> www_dir = __dirname + <span class="hljs-string">'/www'</span>;
+<span class="hljs-keyword">var</span> app_server;</pre></div>
+        
+      
+        
+        <p><strong>test grunt task</strong></p>
+
+        
+          <div class='highlight'><pre>describe(<span class="hljs-string">'phantomizer-yslow grunt task tests'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span></pre></div>
+        
+      
+        
+        <p>needs longer mocha timeout</p>
+
+        
+          <div class='highlight'><pre>  <span class="hljs-keyword">this</span>.timeout(<span class="hljs-number">10000</span>);</pre></div>
+        
+      
+        
+        <p><strong>Open a webserver</strong></p>
+
+        
+          <div class='highlight'><pre>  before(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span></pre></div>
+        
+      
+        
+        <p>clean output</p>
+
+        
+          <div class='highlight'><pre>    grunt.file.delete(<span class="hljs-string">"yslow_reports/"</span>);
+
+    <span class="hljs-keyword">var</span> app = express();
+    <span class="hljs-keyword">if</span>( log.level == <span class="hljs-string">"info"</span> ) app.use(express.logger());</pre></div>
+        
+      
+        
+        <p>catch the requests</p>
+
+        
+          <div class='highlight'><pre>    app.use(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(req,res,next)</span>{</span>
+      <span class="hljs-keyword">var</span> f = www_dir+req.path;</pre></div>
+        
+      
+        
+        <p>if the file exists in www dir</p>
+
+        
+          <div class='highlight'><pre>      <span class="hljs-keyword">if</span>( grunt.file.exists(f) ){
+        <span class="hljs-keyword">var</span> timeout = <span class="hljs-number">1</span>;</pre></div>
+        
+      
+        
+        <p>and is apply ing congestion</p>
+
+        
+          <div class='highlight'><pre>        <span class="hljs-keyword">if</span>( url_congestion.length&gt;<span class="hljs-number">0</span> &amp;&amp; url_congestion.indexOf(req.path)&gt;-<span class="hljs-number">1</span>){</pre></div>
+        
+      
+        
+        <p>generate a timeout given the configuration</p>
+
+        
+          <div class='highlight'><pre>          timeout = random_num(with_congestion[<span class="hljs-number">0</span>],with_congestion[<span class="hljs-number">1</span>]);
+        }</pre></div>
+        
+      
+        
+        <p>render the content, with delay or not</p>
+
+        
+          <div class='highlight'><pre>        setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+          res.send(grunt.file.read(f))
+        },timeout)</pre></div>
+        
+      
+        
+        <p>or pass to 404 handler</p>
+
+        
+          <div class='highlight'><pre>      }<span class="hljs-keyword">else</span>{
+        next();
+      }
+    });</pre></div>
+        
+      
+        
+        <p>enable webserver</p>
+
+        
+          <div class='highlight'><pre>    app_server = http.createServer(app).listen(<span class="hljs-number">8080</span>);
+  });</pre></div>
+        
+      
+        
+        <p><strong>Close the webserver</strong></p>
+
+        
+          <div class='highlight'><pre>  after(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span>{</span>
+    app_server.close(done);
+  });</pre></div>
+        
+      
+        
+        <p><strong>Clean output</strong></p>
+
+        
+          <div class='highlight'><pre>  afterEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span></pre></div>
+        
+      
+        
+        <p>grunt.file.delete(“yslow_reports/“);</p>
+
+        
+          <div class='highlight'><pre>  });</pre></div>
+        
+      
+        
+        <p><strong>limits, weird situations</strong></p>
+
+        
+          <div class='highlight'><pre>  it(<span class="hljs-string">'should produce one file output'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_json_1_file'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 1\/1/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index[.]html[.]json/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+
+      <span class="hljs-keyword">var</span> c = grunt.file.read(<span class="hljs-string">"yslow_reports/index.html.json"</span>);
+      c.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Findex[.]html/</span>);
+      c.should.not.be.empty;
+      <span class="hljs-keyword">var</span> report = <span class="hljs-built_in">JSON</span>.parse(c);
+      report.should.have.properties([
+        <span class="hljs-string">'v'</span>,
+        <span class="hljs-string">'w'</span>,
+        <span class="hljs-string">'o'</span>
+      ]);
+
+      done();
+    });
+  });
+  it(<span class="hljs-string">'should produce one file output'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_file_path'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index[.]html[.]json/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/some\/index[.]html[.]json/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+
+      <span class="hljs-keyword">var</span> c = grunt.file.read(<span class="hljs-string">"yslow_reports/index.html.json"</span>);
+      c.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Findex[.]html/</span>);
+      c.should.not.be.empty;
+      <span class="hljs-keyword">var</span> report = <span class="hljs-built_in">JSON</span>.parse(c);
+      report.should.have.properties([
+        <span class="hljs-string">'v'</span>,
+        <span class="hljs-string">'w'</span>,
+        <span class="hljs-string">'o'</span>
+      ]);
+
+      <span class="hljs-keyword">var</span> c = grunt.file.read(<span class="hljs-string">"yslow_reports/some\/index.html.json"</span>);
+      c.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fsome%2Findex[.]html/</span>);
+      c.should.not.be.empty;
+      <span class="hljs-keyword">var</span> report = <span class="hljs-built_in">JSON</span>.parse(c);
+      report.should.have.properties([
+        <span class="hljs-string">'v'</span>,
+        <span class="hljs-string">'w'</span>,
+        <span class="hljs-string">'o'</span>
+      ]);
+
+      done();
+    });
+  });
+  it(<span class="hljs-string">'should produce three files output'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_json_3_files'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 3\/3/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index[.]html[.]json/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index2[.]html[.]json/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index3[.]html[.]json/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+
+      <span class="hljs-keyword">var</span> c = grunt.file.read(<span class="hljs-string">"yslow_reports/index.html.json"</span>);
+      c.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Findex[.]html/</span>);
+      c.should.not.be.empty;
+      <span class="hljs-keyword">var</span> report = <span class="hljs-built_in">JSON</span>.parse(c);
+      report.should.have.properties([
+        <span class="hljs-string">'v'</span>,
+        <span class="hljs-string">'w'</span>,
+        <span class="hljs-string">'o'</span>
+      ]);
+
+      <span class="hljs-keyword">var</span> c2 = grunt.file.read(<span class="hljs-string">"yslow_reports/index2.html.json"</span>);
+      c2.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Findex2[.]html/</span>);
+      c2.should.not.be.empty;
+      <span class="hljs-keyword">var</span> report = <span class="hljs-built_in">JSON</span>.parse(c2);
+      report.should.have.properties([
+        <span class="hljs-string">'v'</span>,
+        <span class="hljs-string">'w'</span>,
+        <span class="hljs-string">'o'</span>
+      ]);
+
+      <span class="hljs-keyword">var</span> c3 = grunt.file.read(<span class="hljs-string">"yslow_reports/index3.html.json"</span>);
+      c3.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Findex3[.]html/</span>);
+      c3.should.not.be.empty;
+      <span class="hljs-keyword">var</span> report = <span class="hljs-built_in">JSON</span>.parse(c3);
+      report.should.have.properties([
+        <span class="hljs-string">'v'</span>,
+        <span class="hljs-string">'w'</span>,
+        <span class="hljs-string">'o'</span>
+      ]);
+
+      c.should.not.eql(c2);
+      c.should.not.eql(c3);
+      c2.should.not.eql(c3);
+
+      done();
+    });
+  });
+
+  it(<span class="hljs-string">'should produce two files output'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_json_duplicated_file'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index[.]html[.]json/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index2[.]html[.]json/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+
+      <span class="hljs-keyword">var</span> c = grunt.file.read(<span class="hljs-string">"yslow_reports/index.html.json"</span>);
+      c.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Findex[.]html/</span>);
+      c.should.not.be.empty;
+      <span class="hljs-keyword">var</span> report = <span class="hljs-built_in">JSON</span>.parse(c);
+      report.should.have.properties([
+        <span class="hljs-string">'v'</span>,
+        <span class="hljs-string">'w'</span>,
+        <span class="hljs-string">'o'</span>
+      ]);
+
+      <span class="hljs-keyword">var</span> c2 = grunt.file.read(<span class="hljs-string">"yslow_reports/index2.html.json"</span>);
+      c2.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Findex2[.]html/</span>);
+      c2.should.not.be.empty;
+      <span class="hljs-keyword">var</span> report = <span class="hljs-built_in">JSON</span>.parse(c2);
+      report.should.have.properties([
+        <span class="hljs-string">'v'</span>,
+        <span class="hljs-string">'w'</span>,
+        <span class="hljs-string">'o'</span>
+      ]);
+
+      c.should.not.eql(c2);
+
+      done();
+    });
+  });</pre></div>
+        
+      
+        
+        <p><strong>ensure yslow output files are correct after yslow output parsing</strong></p>
+
+        
+          <div class='highlight'><pre>  it(<span class="hljs-string">'should produce the right file output, json'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_json_file'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index[.]html[.]json/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index2[.]html[.]json/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+
+      <span class="hljs-keyword">var</span> c = grunt.file.read(<span class="hljs-string">"yslow_reports/index.html.json"</span>);
+      c.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Findex[.]html/</span>);
+      c.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fcss%2Findex.css/</span>);
+      c.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fjs%2Findex.js/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fcss%2Findex2[.]css/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fjs%2Findex2[.]js/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fcss%2Findex3[.]css/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fjs%2Findex3[.]js/</span>);
+      c.should.not.be.empty;
+      <span class="hljs-keyword">var</span> report = <span class="hljs-built_in">JSON</span>.parse(c);
+      report.should.have.properties([
+        <span class="hljs-string">'v'</span>,
+        <span class="hljs-string">'w'</span>,
+        <span class="hljs-string">'o'</span>
+      ]);
+
+      <span class="hljs-keyword">var</span> c2 = grunt.file.read(<span class="hljs-string">"yslow_reports/index2.html.json"</span>);
+      c2.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Findex2[.]html/</span>);
+      c2.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fcss%2Findex2[.]css/</span>);
+      c2.should.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fjs%2Findex2[.]js/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fcss%2Findex3[.]css/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fjs%2Findex3[.]js/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fcss%2Findex[.]css/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http%3A%2F%2Flocalhost%3A8080%2Fjs%2Findex[.]js/</span>);
+      c2.should.not.be.empty;
+      <span class="hljs-keyword">var</span> report2 = <span class="hljs-built_in">JSON</span>.parse(c);
+      report2.should.have.properties([
+        <span class="hljs-string">'v'</span>,
+        <span class="hljs-string">'w'</span>,
+        <span class="hljs-string">'o'</span>
+      ]);
+
+      c.should.not.eql(c2);
+
+      done();
+    });
+  });
+  it(<span class="hljs-string">'should produce the right file output, xml'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_xml_file'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index[.]html[.]xml/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index2[.]html[.]xml/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+
+      <span class="hljs-keyword">var</span> c = grunt.file.read(<span class="hljs-string">"yslow_reports/index.html.xml"</span>);
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/index[.]html/</span>);
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index[.]css/</span>);
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index[.]js/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index2[.]css/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index2[.]js/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index3[.]css/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index3[.]js/</span>);
+      c.should.not.be.empty;
+
+      <span class="hljs-keyword">var</span> c2 = grunt.file.read(<span class="hljs-string">"yslow_reports/index2.html.xml"</span>);
+      c2.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/index2[.]html/</span>);
+      c2.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index2[.]css/</span>);
+      c2.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index2[.]js/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index[.]css/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index[.]js/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index3[.]css/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index3[.]js/</span>);
+      c2.should.not.be.empty;
+
+      c.should.not.eql(c2);
+
+      done();
+    });
+  });
+  it(<span class="hljs-string">'should produce the right file output, plain'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_plain_file'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index[.]html[.]plain/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/index2[.]html[.]plain/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+
+      <span class="hljs-keyword">var</span> c = grunt.file.read(<span class="hljs-string">"yslow_reports/index.html.plain"</span>);
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/index[.]html/</span>);
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index[.]css/</span>);
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index[.]js/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index2[.]css/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index2[.]js/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index3[.]css/</span>);
+      c.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index3[.]js/</span>);
+      c.should.not.be.empty;
+
+      <span class="hljs-keyword">var</span> c2 = grunt.file.read(<span class="hljs-string">"yslow_reports/index2.html.plain"</span>);
+      c2.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/index2[.]html/</span>);
+      c2.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index2[.]css/</span>);
+      c2.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index2[.]js/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index[.]css/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index[.]js/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index3[.]css/</span>);
+      c2.should.not.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index3[.]js/</span>);
+      c2.should.not.be.empty;
+
+      c.should.not.eql(c2);
+
+      done();
+    });
+  });
+  it(<span class="hljs-string">'should produce the right file output, junit'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_junit_file'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/report[.]junit/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+
+      <span class="hljs-keyword">var</span> c = grunt.file.read(<span class="hljs-string">"yslow_reports/report.junit"</span>);
+
+      c.should.not.be.empty;
+
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index[.]css/</span>);
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index[.]js/</span>);
+
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index2[.]css/</span>);
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index2[.]js/</span>);
+
+      done();
+    });
+  });
+  it(<span class="hljs-string">'should produce the right file output, tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_tap_file'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/yslow_reports\/report[.]tap/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+
+      <span class="hljs-keyword">var</span> c = grunt.file.read(<span class="hljs-string">"yslow_reports/report.tap"</span>);
+
+      c.should.not.be.empty;
+
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index[.]css/</span>);
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index[.]js/</span>);
+
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/css\/index2[.]css/</span>);
+      c.should.match(<span class="hljs-regexp">/http:\/\/localhost:8080\/js\/index2[.]js/</span>);
+
+      done();
+    });
+  });</pre></div>
+        
+      
+        
+        <p><strong>ensure yslow output parsing is correct</strong></p>
+
+        
+          <div class='highlight'><pre>  it(<span class="hljs-string">'should provides right count of responses, json'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_json'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+      done();
+    });
+  });
+
+  it(<span class="hljs-string">'should provides right count of responses, xml'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_xml'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+      done();
+    });
+  });
+
+  it(<span class="hljs-string">'should provides right count of responses, plain'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_plain'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+      done();
+    });
+  });
+
+  it(<span class="hljs-string">'should provides right count of responses, tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_tap'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+      done();
+    });
+  });
+
+  it(<span class="hljs-string">'should provides right count of responses, junit'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(done)</span> {</span>
+    run_grunt([
+      <span class="hljs-string">'yslow:test_junit'</span>,
+    ],<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(code,stdout,stderr)</span>{</span>
+      stderr.should.be.empty;
+      stdout.should.match(<span class="hljs-regexp">/Running http/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Parsed: 2\/2/</span>);
+      stdout.should.match(<span class="hljs-regexp">/Done, without errors[.]/</span>);
+      done();
+    });
+  });
+
+
+});</pre></div>
+        
+      
+        
+        <h2 id="helper-functions">helper functions</h2>
+
+        
+      
+        
+        
+        
+          <div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">random_num</span><span class="hljs-params">(min,max)</span>{</span>
+  <span class="hljs-keyword">return</span> ( min+<span class="hljs-built_in">Math</span>.floor(<span class="hljs-built_in">Math</span>.random() * (max-min)) );
+}</pre></div>
+        
+      
+        
+        <p>spawns a new grunt process</p>
+
+        
+          <div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">run_grunt</span><span class="hljs-params">(args,cb)</span>{</span>
+  <span class="hljs-keyword">var</span> stdout = <span class="hljs-string">""</span>;
+  <span class="hljs-keyword">var</span> stderr = <span class="hljs-string">""</span>;
+  <span class="hljs-keyword">var</span> grunt_process = <span class="hljs-built_in">require</span>(<span class="hljs-string">'child_process'</span>).spawn(<span class="hljs-string">'grunt'</span>, args);</pre></div>
+        
+      
+        
+        <p>with live output piping</p>
+
+        
+          <div class='highlight'><pre>  grunt_process.stdout.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
+    log.info(<span class="hljs-string">'stdout'</span>, <span class="hljs-string">''</span>, data.toString());
+    stdout+=data.toString();
+  });
+  grunt_process.stderr.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
+    log.info(<span class="hljs-string">'stderr'</span>, <span class="hljs-string">''</span>, data.toString());
+    stderr+=data.toString();
+  });</pre></div>
+        
+      
+        
+        <p>and callback on exit process</p>
+
+        
+          <div class='highlight'><pre>  grunt_process.on(<span class="hljs-string">'exit'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(code)</span> {</span>
+    <span class="hljs-keyword">if</span>(cb) cb(code,stdout,stderr);
+  });
+  <span class="hljs-keyword">return</span> grunt_process;
+}</pre></div>
+        
+      
+      <div class="fleur">h</div>
+    </div>
+  </div>
+</body>
+</html>
