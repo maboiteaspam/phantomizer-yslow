@@ -12,16 +12,20 @@ log.level = "log";
 
 // phantomizer-yslow grunt task test suite
 // ------
+// min/max congestion timeout
 var with_congestion = [0,0];
 with_congestion = [800,1000];
 with_congestion = [0,0];
 with_congestion = [300,1500];
+// url to apply congestion to
 var url_congestion = ["/index2.html"];
+
 var www_dir = __dirname + '/www';
 var app_server;
 
 describe('phantomizer-yslow grunt task tests', function () {
 
+  // needs longer mocha timeout
   this.timeout(10000);
 
   // **Open a webserver**
@@ -31,21 +35,27 @@ describe('phantomizer-yslow grunt task tests', function () {
 
     var app = express();
     if( log.level == "info" ) app.use(express.logger());
-    // app.use(express.static(www_dir));
+    // catch the requests
     app.use(function(req,res,next){
       var f = www_dir+req.path;
+      // if the file exists in www dir
       if( grunt.file.exists(f) ){
         var timeout = 1;
+        // and is apply ing congestion
         if( url_congestion.length>0 && url_congestion.indexOf(req.path)>-1){
+          // generate a timeout given the configuration
           timeout = random_num(with_congestion[0],with_congestion[1]);
         }
+        // render the content, with delay or not
         setTimeout(function(){
           res.send(grunt.file.read(f))
         },timeout)
+      // or pass to 404 handler
       }else{
         next();
       }
     });
+    // enable webserver
     app_server = http.createServer(app).listen(8080);
   });
 
@@ -62,7 +72,7 @@ describe('phantomizer-yslow grunt task tests', function () {
 
 
 
-  // **test grunt task, file output**
+  // **test grunt task, limits, weird situations**
   it('should produce one file output', function(done) {
     run_grunt([
       'yslow:test_json_1_file',
@@ -376,7 +386,7 @@ describe('phantomizer-yslow grunt task tests', function () {
     });
   });
 
-  // **test grunt task**
+  // **test grunt task, ensure yslow output formatting is correct**
   it('should provides right count of responses, json', function(done) {
     run_grunt([
       'yslow:test_json',
@@ -445,8 +455,7 @@ describe('phantomizer-yslow grunt task tests', function () {
 function random_num(min,max){
   return ( min+Math.floor(Math.random() * (max-min)) );
 }
-// spawns a new phantomjs process
-var phantomjs = require('phantomjs');
+// spawns a new grunt process
 function run_grunt(args,cb){
   var stdout = "";
   var stderr = "";
