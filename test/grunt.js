@@ -12,6 +12,11 @@ log.level = "info";
 
 // phantomizer-yslow grunt task test suite
 // ------
+var with_congestion = [0,0];
+with_congestion = [800,1000];
+with_congestion = [0,0];
+with_congestion = [300,1500];
+var url_congestion = ["/index2.html"];
 var www_dir = __dirname + '/www';
 var app_server;
 
@@ -30,9 +35,13 @@ describe('phantomizer-yslow grunt task tests', function () {
     app.use(function(req,res,next){
       var f = www_dir+req.path;
       if( grunt.file.exists(f) ){
+        var timeout = 1;
+        if( url_congestion.length>0 && url_congestion.indexOf(req.path)>-1){
+          timeout = random_num(with_congestion[0],with_congestion[1]);
+        }
         setTimeout(function(){
           res.send(grunt.file.read(f))
-        },random_num(10,1000))
+        },timeout)
       }else{
         next();
       }
@@ -47,7 +56,7 @@ describe('phantomizer-yslow grunt task tests', function () {
 
   // **Clean output**
   afterEach(function(){
-    grunt.file.delete("yslow_reports/");
+    //grunt.file.delete("yslow_reports/");
   });
 
 
@@ -61,11 +70,45 @@ describe('phantomizer-yslow grunt task tests', function () {
       stderr.should.be.empty;
       stdout.should.match(/Running http/);
       stdout.should.match(/Parsed: 1\/1/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index[.]html[.]json/);
+      stdout.should.match(/yslow_reports\/index[.]html[.]json/);
       stdout.should.match(/Done, without errors[.]/);
 
-      var c = grunt.file.read("yslow_reports/http_localhost_8080-index.html.json");
+      var c = grunt.file.read("yslow_reports/index.html.json");
       c.should.match(/http%3A%2F%2Flocalhost%3A8080%2Findex[.]html/);
+      c.should.not.be.empty;
+      var report = JSON.parse(c);
+      report.should.have.properties([
+        'v',
+        'w',
+        'o'
+      ]);
+
+      done();
+    });
+  });
+  it('should produce one file output', function(done) {
+    run_grunt([
+      'yslow:test_file_path',
+    ],function(code,stdout,stderr){
+      stderr.should.be.empty;
+      stdout.should.match(/Running http/);
+      stdout.should.match(/Parsed: 2\/2/);
+      stdout.should.match(/yslow_reports\/index[.]html[.]json/);
+      stdout.should.match(/yslow_reports\/some\/index[.]html[.]json/);
+      stdout.should.match(/Done, without errors[.]/);
+
+      var c = grunt.file.read("yslow_reports/index.html.json");
+      c.should.match(/http%3A%2F%2Flocalhost%3A8080%2Findex[.]html/);
+      c.should.not.be.empty;
+      var report = JSON.parse(c);
+      report.should.have.properties([
+        'v',
+        'w',
+        'o'
+      ]);
+
+      var c = grunt.file.read("yslow_reports/some\/index.html.json");
+      c.should.match(/http%3A%2F%2Flocalhost%3A8080%2Fsome%2Findex[.]html/);
       c.should.not.be.empty;
       var report = JSON.parse(c);
       report.should.have.properties([
@@ -84,12 +127,12 @@ describe('phantomizer-yslow grunt task tests', function () {
       stderr.should.be.empty;
       stdout.should.match(/Running http/);
       stdout.should.match(/Parsed: 3\/3/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index[.]html[.]json/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index2[.]html[.]json/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index3[.]html[.]json/);
+      stdout.should.match(/yslow_reports\/index[.]html[.]json/);
+      stdout.should.match(/yslow_reports\/index2[.]html[.]json/);
+      stdout.should.match(/yslow_reports\/index3[.]html[.]json/);
       stdout.should.match(/Done, without errors[.]/);
 
-      var c = grunt.file.read("yslow_reports/http_localhost_8080-index.html.json");
+      var c = grunt.file.read("yslow_reports/index.html.json");
       c.should.match(/http%3A%2F%2Flocalhost%3A8080%2Findex[.]html/);
       c.should.not.be.empty;
       var report = JSON.parse(c);
@@ -99,7 +142,7 @@ describe('phantomizer-yslow grunt task tests', function () {
         'o'
       ]);
 
-      var c2 = grunt.file.read("yslow_reports/http_localhost_8080-index2.html.json");
+      var c2 = grunt.file.read("yslow_reports/index2.html.json");
       c2.should.match(/http%3A%2F%2Flocalhost%3A8080%2Findex2[.]html/);
       c2.should.not.be.empty;
       var report = JSON.parse(c2);
@@ -109,7 +152,7 @@ describe('phantomizer-yslow grunt task tests', function () {
         'o'
       ]);
 
-      var c3 = grunt.file.read("yslow_reports/http_localhost_8080-index3.html.json");
+      var c3 = grunt.file.read("yslow_reports/index3.html.json");
       c3.should.match(/http%3A%2F%2Flocalhost%3A8080%2Findex3[.]html/);
       c3.should.not.be.empty;
       var report = JSON.parse(c3);
@@ -126,6 +169,7 @@ describe('phantomizer-yslow grunt task tests', function () {
       done();
     });
   });
+
   it('should produce two files output', function(done) {
     run_grunt([
       'yslow:test_json_duplicated_file',
@@ -133,11 +177,11 @@ describe('phantomizer-yslow grunt task tests', function () {
       stderr.should.be.empty;
       stdout.should.match(/Running http/);
       stdout.should.match(/Parsed: 2\/2/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index[.]html[.]json/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index2[.]html[.]json/);
+      stdout.should.match(/yslow_reports\/index[.]html[.]json/);
+      stdout.should.match(/yslow_reports\/index2[.]html[.]json/);
       stdout.should.match(/Done, without errors[.]/);
 
-      var c = grunt.file.read("yslow_reports/http_localhost_8080-index.html.json");
+      var c = grunt.file.read("yslow_reports/index.html.json");
       c.should.match(/http%3A%2F%2Flocalhost%3A8080%2Findex[.]html/);
       c.should.not.be.empty;
       var report = JSON.parse(c);
@@ -147,7 +191,7 @@ describe('phantomizer-yslow grunt task tests', function () {
         'o'
       ]);
 
-      var c2 = grunt.file.read("yslow_reports/http_localhost_8080-index2.html.json");
+      var c2 = grunt.file.read("yslow_reports/index2.html.json");
       c2.should.match(/http%3A%2F%2Flocalhost%3A8080%2Findex2[.]html/);
       c2.should.not.be.empty;
       var report = JSON.parse(c2);
@@ -172,11 +216,11 @@ describe('phantomizer-yslow grunt task tests', function () {
       stderr.should.be.empty;
       stdout.should.match(/Running http/);
       stdout.should.match(/Parsed: 2\/2/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index[.]html[.]json/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index2[.]html[.]json/);
+      stdout.should.match(/yslow_reports\/index[.]html[.]json/);
+      stdout.should.match(/yslow_reports\/index2[.]html[.]json/);
       stdout.should.match(/Done, without errors[.]/);
 
-      var c = grunt.file.read("yslow_reports/http_localhost_8080-index.html.json");
+      var c = grunt.file.read("yslow_reports/index.html.json");
       c.should.match(/http%3A%2F%2Flocalhost%3A8080%2Findex[.]html/);
       c.should.match(/http%3A%2F%2Flocalhost%3A8080%2Fcss%2Findex.css/);
       c.should.match(/http%3A%2F%2Flocalhost%3A8080%2Fjs%2Findex.js/);
@@ -192,7 +236,7 @@ describe('phantomizer-yslow grunt task tests', function () {
         'o'
       ]);
 
-      var c2 = grunt.file.read("yslow_reports/http_localhost_8080-index2.html.json");
+      var c2 = grunt.file.read("yslow_reports/index2.html.json");
       c2.should.match(/http%3A%2F%2Flocalhost%3A8080%2Findex2[.]html/);
       c2.should.match(/http%3A%2F%2Flocalhost%3A8080%2Fcss%2Findex2[.]css/);
       c2.should.match(/http%3A%2F%2Flocalhost%3A8080%2Fjs%2Findex2[.]js/);
@@ -220,11 +264,11 @@ describe('phantomizer-yslow grunt task tests', function () {
       stderr.should.be.empty;
       stdout.should.match(/Running http/);
       stdout.should.match(/Parsed: 2\/2/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index[.]html[.]xml/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index2[.]html[.]xml/);
+      stdout.should.match(/yslow_reports\/index[.]html[.]xml/);
+      stdout.should.match(/yslow_reports\/index2[.]html[.]xml/);
       stdout.should.match(/Done, without errors[.]/);
 
-      var c = grunt.file.read("yslow_reports/http_localhost_8080-index.html.xml");
+      var c = grunt.file.read("yslow_reports/index.html.xml");
       c.should.match(/http:\/\/localhost:8080\/index[.]html/);
       c.should.match(/http:\/\/localhost:8080\/css\/index[.]css/);
       c.should.match(/http:\/\/localhost:8080\/js\/index[.]js/);
@@ -234,7 +278,7 @@ describe('phantomizer-yslow grunt task tests', function () {
       c.should.not.match(/http:\/\/localhost:8080\/js\/index3[.]js/);
       c.should.not.be.empty;
 
-      var c2 = grunt.file.read("yslow_reports/http_localhost_8080-index2.html.xml");
+      var c2 = grunt.file.read("yslow_reports/index2.html.xml");
       c2.should.match(/http:\/\/localhost:8080\/index2[.]html/);
       c2.should.match(/http:\/\/localhost:8080\/css\/index2[.]css/);
       c2.should.match(/http:\/\/localhost:8080\/js\/index2[.]js/);
@@ -256,11 +300,11 @@ describe('phantomizer-yslow grunt task tests', function () {
       stderr.should.be.empty;
       stdout.should.match(/Running http/);
       stdout.should.match(/Parsed: 2\/2/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index[.]html[.]plain/);
-      stdout.should.match(/yslow_reports\/http_localhost_8080-index2[.]html[.]plain/);
+      stdout.should.match(/yslow_reports\/index[.]html[.]plain/);
+      stdout.should.match(/yslow_reports\/index2[.]html[.]plain/);
       stdout.should.match(/Done, without errors[.]/);
 
-      var c = grunt.file.read("yslow_reports/http_localhost_8080-index.html.plain");
+      var c = grunt.file.read("yslow_reports/index.html.plain");
       c.should.match(/http:\/\/localhost:8080\/index[.]html/);
       c.should.match(/http:\/\/localhost:8080\/css\/index[.]css/);
       c.should.match(/http:\/\/localhost:8080\/js\/index[.]js/);
@@ -270,7 +314,7 @@ describe('phantomizer-yslow grunt task tests', function () {
       c.should.not.match(/http:\/\/localhost:8080\/js\/index3[.]js/);
       c.should.not.be.empty;
 
-      var c2 = grunt.file.read("yslow_reports/http_localhost_8080-index2.html.plain");
+      var c2 = grunt.file.read("yslow_reports/index2.html.plain");
       c2.should.match(/http:\/\/localhost:8080\/index2[.]html/);
       c2.should.match(/http:\/\/localhost:8080\/css\/index2[.]css/);
       c2.should.match(/http:\/\/localhost:8080\/js\/index2[.]js/);

@@ -5,6 +5,31 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
     yslow: {
 
+      test_json_1_file: {
+        options: {
+          urls:['http://localhost:8080/index.html'],
+          output:"yslow_reports"
+        }
+      },
+      test_json_3_files: {
+        options: {
+          urls:['http://localhost:8080/index.html','http://localhost:8080/index2.html','http://localhost:8080/index3.html'],
+          output:"yslow_reports"
+        }
+      },
+      test_json_duplicated_file: {
+        options: {
+          urls:['http://localhost:8080/index.html','http://localhost:8080/index2.html','http://localhost:8080/index2.html'],
+          output:"yslow_reports"
+        }
+      },
+      test_file_path: {
+        options: {
+          urls:['http://localhost:8080/index.html','http://localhost:8080/some/index.html'],
+          output:"yslow_reports"
+        }
+      },
+
       test_json: {
         options: {
           urls:['http://localhost:8080/index.html','http://localhost:8080/index2.html']
@@ -32,25 +57,6 @@ module.exports = function(grunt) {
         options: {
           urls:['http://localhost:8080/index.html','http://localhost:8080/index2.html'],
           format:"junit"
-        }
-      },
-
-      test_json_1_file: {
-        options: {
-          urls:['http://localhost:8080/index.html'],
-          output:"yslow_reports"
-        }
-      },
-      test_json_3_files: {
-        options: {
-          urls:['http://localhost:8080/index.html','http://localhost:8080/index2.html','http://localhost:8080/index3.html'],
-          output:"yslow_reports"
-        }
-      },
-      test_json_duplicated_file: {
-        options: {
-          urls:['http://localhost:8080/index.html','http://localhost:8080/index2.html','http://localhost:8080/index2.html'],
-          output:"yslow_reports"
         }
       },
 

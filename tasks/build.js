@@ -8,6 +8,7 @@ module.exports = function(grunt) {
   var phantomjs = require('phantomjs');
   var yslow = require('../lib/main.js');
   var ph_libutil = require("phantomizer-libutil");
+  var url_parser = require('url');
 
   grunt.registerMultiTask("yslow",
     "Measure page loading times with YSlow", function () {
@@ -190,7 +191,7 @@ module.exports = function(grunt) {
     return args;
   }
   function end_message(urls,responses){
-    grunt.log.ok("Parsed: "+urls.length+"/"+responses.length);
+    grunt.log.ok("Parsed: "+responses.length+"/"+urls.length);
 
     if( urls.length !== responses.length ){
       grunt.log.error("report bug to");
@@ -212,12 +213,8 @@ module.exports = function(grunt) {
         grunt.log.ok(filep);
       }else{
         for(var n in responses ){
-          var url = responses[n].url;
-          url = url.replace(/(http|https):\/\//,"$1_");
-          url = url.replace(/:([0-9]+)/,"_$1");
-          url = url.replace(/\//,"-");
-          url += "."+format;
-          var filep = output+"/"+url;
+          var u = url_parser.parse(responses[n].url);
+          var filep = output+""+u.path+"."+format;
           grunt.file.write(filep, responses[n].response);
           grunt.log.ok(filep);
         }
@@ -293,6 +290,7 @@ module.exports = function(grunt) {
     var stdout = "";
     var stderr = "";
 
+    grunt.log.write(phantomjs.path+" "+args.join(" "));
     var pantomjs_process = require('child_process').spawn(phantomjs.path, args);
     // with live output piping
     pantomjs_process.stdout.on('data', function (data) {
