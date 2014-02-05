@@ -48,6 +48,8 @@ http://github.com/maboiteaspam/phantomizer
         cdns:null,
         // specify output path
         output:null
+        // produce human friendly output
+        readable:false,
         }
       },
       "yahoo":{
