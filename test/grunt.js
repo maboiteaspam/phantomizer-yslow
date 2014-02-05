@@ -67,7 +67,7 @@ describe('phantomizer-yslow grunt task tests', function () {
 
   // **Clean output**
   afterEach(function(){
-    //grunt.file.delete("yslow_reports/");
+    grunt.file.delete("yslow_reports/");
   });
 
 
