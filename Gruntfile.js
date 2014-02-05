@@ -102,6 +102,8 @@ module.exports = function(grunt) {
         src: [
           'lib/main.js',
           'lib/webserver.js',
+          'tasks/build.js',
+          'test/grunt.js',
           'test/node_module.js'
         ],
         options: {

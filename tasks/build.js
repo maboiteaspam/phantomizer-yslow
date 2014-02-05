@@ -10,6 +10,9 @@ module.exports = function(grunt) {
   var ph_libutil = require("phantomizer-libutil");
   var url_parser = require('url');
 
+  // yslow runner
+  // ------------
+  // use it for any project
   grunt.registerMultiTask("yslow",
     "Measure page loading times with YSlow", function () {
 
@@ -44,7 +47,7 @@ module.exports = function(grunt) {
 
       var done = this.async();
 
-      var urls = filter_urls(options.urls);
+      var urls = unique_urls(options.urls);
       grunt.log.ok("Running "+urls);
 
       var args = forge_yslow_args(options);
@@ -64,6 +67,9 @@ module.exports = function(grunt) {
 
     });
 
+  // yslow phantomizer
+  // ------------
+  // specific to phantomizer projects
   grunt.registerMultiTask("phantomizer-yslow",
     "Measure page loading times with YSlow", function () {
 
@@ -136,7 +142,7 @@ module.exports = function(grunt) {
           webserver.start(port, ssl_port, host);
         }
 
-        var urls = filter_urls(options.urls);
+        var urls = unique_urls(options.urls);
         grunt.log.ok("Running "+urls);
         var args = forge_yslow_args(options);
 
@@ -156,7 +162,9 @@ module.exports = function(grunt) {
 
     });
 
-  function filter_urls(urls){
+  // helper functions
+  // --------
+  function unique_urls(urls){
     var retour = [];
     for( var n in urls ){
       if( urls[n] && retour.indexOf(urls[n]) == -1 ){
@@ -165,6 +173,8 @@ module.exports = function(grunt) {
     }
     return retour;
   }
+  // tranforms options to --[switch] [value]
+  // does not manage urls
   function forge_yslow_args(options){
     var known_switchs = [
       'info',
@@ -190,6 +200,7 @@ module.exports = function(grunt) {
     }
     return args;
   }
+  // grunt task confirmation message
   function end_message(urls,responses){
     grunt.log.ok("Parsed: "+responses.length+"/"+urls.length);
 
@@ -199,6 +210,17 @@ module.exports = function(grunt) {
       grunt.fail.warn("could not parse correctly yslow output");
     }
   }
+  // write yslow output files after console output parsing
+  /**
+   * if output is '-', goes to console
+   * if output is null, displays nothing
+   * if output is junit|tap, records results in some_output_path/report.(junit|tap)
+   * otherwise, records results in some_output_path/some/url_path/url_filename.ext.(xml|json|plain)
+   *
+   * @param format
+   * @param output
+   * @param responses
+   */
   function write_yslow_output(format,output,responses){
     if(output!="-"&&output!=null){
       if( format.match(/(junit|tap)/) ){
@@ -221,6 +243,24 @@ module.exports = function(grunt) {
       }
     }
   }
+  // calls yslow and parses its output in best way possible
+  /**
+   * Returns an array of objects
+   *  responses = [
+   *  {url:'',response:''},
+   *  {url:'',response:''}
+   *  ]
+   *
+   *  Note that junit and tap format
+   *  can not match correctly request to output,
+   *  thus, the url value is not reliable for those two
+   *
+   * @param format (xml|json|plain|tap|junit)
+   * @param args []
+   * @param urls []
+   * @param then callback
+   * @returns {*}
+   */
   function process_yslow_output(format,args,urls, then){
     var responses = [];
     var current_response = "";
@@ -272,6 +312,15 @@ module.exports = function(grunt) {
 
     return phantomjs_process;
   }
+  // parses and output and returns the associate url, when possible
+  /**
+   * tap and junit returns false
+   *
+   * @param format (xml|json|plain|tap|junit)
+   * @param urls []
+   * @param response ''
+   * @returns {boolean}
+   */
   function match_yslow_response_url(format,urls,response){
     var found_url = false;
     if( format == "json" ){
@@ -287,6 +336,7 @@ module.exports = function(grunt) {
     }
     return found_url;
   }
+  // runs phantomjs and pipes output to grunt
   function run_phantomjs(args,then){
 
     args.unshift(yslow.path);
