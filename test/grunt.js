@@ -11,7 +11,8 @@ var log = require('npmlog');
 // min/max congestion timeout
 var url_congestion = {
   '/not_exists.html':[0,0],
-  '/index2.html':[300,1500]
+  '/index2.html':[300,1500],
+  '/data.js':[700,800]
 };
 
 var www_dir = __dirname + '/www';

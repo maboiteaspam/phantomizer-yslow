@@ -1,3 +1,5 @@
 (function(){
-  console.log("hello")
+  $.get("/data.js",function(){
+    console.log("hello")
+  })
 })();
