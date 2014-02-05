@@ -71,11 +71,7 @@
 <span class="hljs-keyword">var</span> grunt = <span class="hljs-built_in">require</span>(<span class="hljs-string">'grunt'</span>);
 <span class="hljs-keyword">var</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>);
 <span class="hljs-keyword">var</span> express = <span class="hljs-built_in">require</span>(<span class="hljs-string">'express'</span>);
-<span class="hljs-keyword">var</span> log = <span class="hljs-built_in">require</span>(<span class="hljs-string">'npmlog'</span>);
-
-log.level = <span class="hljs-string">"info"</span>;
-log.level = <span class="hljs-string">"log"</span>;
-log.level = <span class="hljs-string">"silent"</span>;</pre></div>
+<span class="hljs-keyword">var</span> log = <span class="hljs-built_in">require</span>(<span class="hljs-string">'npmlog'</span>);</pre></div>
         
       
         
@@ -97,6 +93,11 @@ describe(<span class="hljs-string">'phantomizer-yslow tests'</span>, <span class
 
         
           <div class='highlight'><pre>  before(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+
+    log.level = <span class="hljs-string">"log"</span>;
+    log.level = <span class="hljs-string">"info"</span>;
+    log.level = <span class="hljs-string">"silent"</span>;
+
     <span class="hljs-keyword">var</span> app = express();
     <span class="hljs-keyword">if</span>( log.level == <span class="hljs-string">"info"</span> ) app.use(express.logger());
     app.use(express.static(www_dir));

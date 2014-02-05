@@ -71,11 +71,7 @@
 <span class="hljs-keyword">var</span> grunt = <span class="hljs-built_in">require</span>(<span class="hljs-string">'grunt'</span>);
 <span class="hljs-keyword">var</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>);
 <span class="hljs-keyword">var</span> express = <span class="hljs-built_in">require</span>(<span class="hljs-string">'express'</span>);
-<span class="hljs-keyword">var</span> log = <span class="hljs-built_in">require</span>(<span class="hljs-string">'npmlog'</span>);
-
-log.level = <span class="hljs-string">"silent"</span>;
-log.level = <span class="hljs-string">"info"</span>;
-log.level = <span class="hljs-string">"log"</span>;</pre></div>
+<span class="hljs-keyword">var</span> log = <span class="hljs-built_in">require</span>(<span class="hljs-string">'npmlog'</span>);</pre></div>
         
       
         
@@ -87,17 +83,10 @@ log.level = <span class="hljs-string">"log"</span>;</pre></div>
         <p>min/max congestion timeout</p>
 
         
-          <div class='highlight'><pre><span class="hljs-keyword">var</span> with_congestion = [<span class="hljs-number">0</span>,<span class="hljs-number">0</span>];
-with_congestion = [<span class="hljs-number">800</span>,<span class="hljs-number">1000</span>];
-with_congestion = [<span class="hljs-number">0</span>,<span class="hljs-number">0</span>];
-with_congestion = [<span class="hljs-number">300</span>,<span class="hljs-number">1500</span>];</pre></div>
-        
-      
-        
-        <p>url to apply congestion to</p>
-
-        
-          <div class='highlight'><pre><span class="hljs-keyword">var</span> url_congestion = [<span class="hljs-string">"/index2.html"</span>];
+          <div class='highlight'><pre><span class="hljs-keyword">var</span> url_congestion = {
+  <span class="hljs-string">'/not_exists.html'</span>:[<span class="hljs-number">0</span>,<span class="hljs-number">0</span>],
+  <span class="hljs-string">'/index2.html'</span>:[<span class="hljs-number">300</span>,<span class="hljs-number">1500</span>]
+};
 
 <span class="hljs-keyword">var</span> www_dir = __dirname + <span class="hljs-string">'/www'</span>;
 <span class="hljs-keyword">var</span> app_server;</pre></div>
@@ -121,7 +110,11 @@ with_congestion = [<span class="hljs-number">300</span>,<span class="hljs-number
         <p><strong>Open a webserver</strong></p>
 
         
-          <div class='highlight'><pre>  before(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span></pre></div>
+          <div class='highlight'><pre>  before(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+
+    log.level = <span class="hljs-string">"log"</span>;
+    log.level = <span class="hljs-string">"info"</span>;
+    log.level = <span class="hljs-string">"silent"</span>;</pre></div>
         
       
         
@@ -151,17 +144,17 @@ with_congestion = [<span class="hljs-number">300</span>,<span class="hljs-number
         
       
         
-        <p>and is apply ing congestion</p>
+        <p>and is applying congestion</p>
 
         
-          <div class='highlight'><pre>        <span class="hljs-keyword">if</span>( url_congestion.length&gt;<span class="hljs-number">0</span> &amp;&amp; url_congestion.indexOf(req.path)&gt;-<span class="hljs-number">1</span>){</pre></div>
+          <div class='highlight'><pre>        <span class="hljs-keyword">if</span>( url_congestion[req.path] ){</pre></div>
         
       
         
         <p>generate a timeout given the configuration</p>
 
         
-          <div class='highlight'><pre>          timeout = random_num(with_congestion[<span class="hljs-number">0</span>],with_congestion[<span class="hljs-number">1</span>]);
+          <div class='highlight'><pre>          timeout = random_num(url_congestion[req.path][<span class="hljs-number">0</span>],url_congestion[req.path][<span class="hljs-number">1</span>]);
         }</pre></div>
         
       
@@ -205,14 +198,9 @@ with_congestion = [<span class="hljs-number">300</span>,<span class="hljs-number
         <p><strong>Clean output</strong></p>
 
         
-          <div class='highlight'><pre>  afterEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span></pre></div>
-        
-      
-        
-        <p>grunt.file.delete(“yslow_reports/“);</p>
-
-        
-          <div class='highlight'><pre>  });</pre></div>
+          <div class='highlight'><pre>  afterEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+    grunt.file.delete(<span class="hljs-string">"yslow_reports/"</span>);
+  });</pre></div>
         
       
         
