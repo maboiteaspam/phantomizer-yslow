@@ -102,7 +102,7 @@ module.exports = function(grunt) {
         src: [
           'lib/main.js',
           'lib/webserver.js',
-          'test/main.js'
+          'test/node_module.js'
         ],
         options: {
           layout:'linear',

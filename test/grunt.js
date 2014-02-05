@@ -23,6 +23,7 @@ var url_congestion = ["/index2.html"];
 var www_dir = __dirname + '/www';
 var app_server;
 
+// **test grunt task**
 describe('phantomizer-yslow grunt task tests', function () {
 
   // needs longer mocha timeout
@@ -72,7 +73,7 @@ describe('phantomizer-yslow grunt task tests', function () {
 
 
 
-  // **test grunt task, limits, weird situations**
+  // **limits, weird situations**
   it('should produce one file output', function(done) {
     run_grunt([
       'yslow:test_json_1_file',
@@ -218,7 +219,7 @@ describe('phantomizer-yslow grunt task tests', function () {
   });
 
 
-  // **test grunt task, file output format**
+  // **ensure yslow output files are correct after yslow output parsing**
   it('should produce the right file output, json', function(done) {
     run_grunt([
       'yslow:test_json_file',
@@ -386,7 +387,7 @@ describe('phantomizer-yslow grunt task tests', function () {
     });
   });
 
-  // **test grunt task, ensure yslow output formatting is correct**
+  // **ensure yslow output parsing is correct**
   it('should provides right count of responses, json', function(done) {
     run_grunt([
       'yslow:test_json',

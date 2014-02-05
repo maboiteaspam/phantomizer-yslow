@@ -28,7 +28,7 @@ describe('phantomizer-yslow tests', function () {
   // **Close the webserver**
   after(function(done){
     // clean output
-    //grunt.file.delete("output/");
+    grunt.file.delete("output/");
     app_server.close(done);
   });
 
@@ -50,6 +50,7 @@ describe('phantomizer-yslow tests', function () {
       done();
     });
   });
+  // **check for console output**
   var url = "http://localhost:8080/index.html";
   it('should display the output', function(done) {
     var yslow = require("../lib/main.js");
