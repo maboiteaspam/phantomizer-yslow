@@ -42,7 +42,9 @@ module.exports = function(grunt) {
         // specify comma separated list of additional CDNs
         cdns:null,
         // specify output path
-        output:null
+        output:null,
+        // produce human friendly output
+        readable:false
       });
 
       var done = this.async();
@@ -55,7 +57,7 @@ module.exports = function(grunt) {
       var yslow_process = process_yslow_output(options.format,args,urls,function(responses){
 
         end_message(urls,responses);
-        write_yslow_output(options.format,options.output,responses);
+        write_yslow_output(options.format,options.output,responses,options.readable);
 
         done();
       });
@@ -104,6 +106,8 @@ module.exports = function(grunt) {
         console:null,
         // specify comma separated list of additional CDNs
         cdns:null,
+        // produce human friendly output
+        readable:false,
 
         meta_dir:''
       });
@@ -149,7 +153,7 @@ module.exports = function(grunt) {
         var yslow_process = process_yslow_output(options.format,args,urls,function(responses){
 
           end_message(urls,responses);
-          write_yslow_output(options.format,options.output,responses);
+          write_yslow_output(options.format,options.output,responses,options.readable);
           done();
         });
         yslow_process.stdout.on('data', function (data) {
@@ -220,8 +224,9 @@ module.exports = function(grunt) {
    * @param format
    * @param output
    * @param responses
+   * @param readable
    */
-  function write_yslow_output(format,output,responses){
+  function write_yslow_output(format,output,responses,readable){
     if(output!="-"&&output!=null){
       if( format.match(/(junit|tap)/) ){
         var content = "";
@@ -237,7 +242,11 @@ module.exports = function(grunt) {
         for(var n in responses ){
           var u = url_parser.parse(responses[n].url);
           var filep = output+""+u.path+"."+format;
-          grunt.file.write(filep, responses[n].response);
+          var content = responses[n].response;
+          if( format == "json" && readable ){
+            content = JSON.stringify(JSON.parse(content),null,4)
+          }
+          grunt.file.write(filep, content);
           grunt.log.ok(filep);
         }
       }
