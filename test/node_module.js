@@ -6,10 +6,6 @@ var http = require('http');
 var express = require('express');
 var log = require('npmlog');
 
-log.level = "info";
-log.level = "log";
-log.level = "silent";
-
 // phantomizer-yslow main.js test suite
 // ------
 var www_dir = __dirname + '/www';
@@ -19,6 +15,11 @@ describe('phantomizer-yslow tests', function () {
 
   // **Open a webserver**
   before(function(){
+
+    log.level = "log";
+    log.level = "info";
+    log.level = "silent";
+
     var app = express();
     if( log.level == "info" ) app.use(express.logger());
     app.use(express.static(www_dir));

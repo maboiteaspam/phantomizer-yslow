@@ -6,19 +6,13 @@ var http = require('http');
 var express = require('express');
 var log = require('npmlog');
 
-log.level = "silent";
-log.level = "info";
-log.level = "log";
-
 // phantomizer-yslow grunt task test suite
 // ------
 // min/max congestion timeout
-var with_congestion = [0,0];
-with_congestion = [800,1000];
-with_congestion = [0,0];
-with_congestion = [300,1500];
-// url to apply congestion to
-var url_congestion = ["/index2.html"];
+var url_congestion = {
+  '/not_exists.html':[0,0],
+  '/index2.html':[300,1500]
+};
 
 var www_dir = __dirname + '/www';
 var app_server;
@@ -31,6 +25,11 @@ describe('phantomizer-yslow grunt task tests', function () {
 
   // **Open a webserver**
   before(function(){
+
+    log.level = "log";
+    log.level = "info";
+    log.level = "silent";
+
     // clean output
     grunt.file.delete("yslow_reports/");
 
@@ -42,10 +41,10 @@ describe('phantomizer-yslow grunt task tests', function () {
       // if the file exists in www dir
       if( grunt.file.exists(f) ){
         var timeout = 1;
-        // and is apply ing congestion
-        if( url_congestion.length>0 && url_congestion.indexOf(req.path)>-1){
+        // and is applying congestion
+        if( url_congestion[req.path] ){
           // generate a timeout given the configuration
-          timeout = random_num(with_congestion[0],with_congestion[1]);
+          timeout = random_num(url_congestion[req.path][0],url_congestion[req.path][1]);
         }
         // render the content, with delay or not
         setTimeout(function(){
