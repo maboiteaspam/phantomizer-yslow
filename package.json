@@ -1,6 +1,6 @@
 {
   "name": "phantomizer-yslow",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": true,
   "description": "Builds a report of DOM and resource load times using YSlow and Phantomjs",
   "keywords": "",
