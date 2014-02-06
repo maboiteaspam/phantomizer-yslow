@@ -99,7 +99,8 @@
         
           <div class='highlight'><pre>    .describe(<span class="hljs-string">'www_dir'</span>, <span class="hljs-string">'Initialize the project file systems environment'</span>)
     .string(<span class="hljs-string">'www_dir'</span>)
-    .default(<span class="hljs-string">'www_dir'</span>, <span class="hljs-string">""</span>);</pre></div>
+    .default(<span class="hljs-string">'www_dir'</span>, <span class="hljs-string">""</span>)
+    .argv;</pre></div>
         
       
         
@@ -107,7 +108,10 @@
 
         
           <div class='highlight'><pre>  <span class="hljs-keyword">var</span> www_dir = path.resolve(__dirname+<span class="hljs-string">"/../"</span>);
-  www_dir = argv.www_dir || www_dir;</pre></div>
+  www_dir = argv.www_dir || www_dir;
+  www_dir = path.resolve(www_dir)+<span class="hljs-string">"/"</span>;
+  www_dir = path.relative(process.cwd(),www_dir);
+  www_dir = !www_dir?<span class="hljs-string">"./"</span>:www_dir;</pre></div>
         
       
         
@@ -133,7 +137,7 @@
           <div class='highlight'><pre>  <span class="hljs-keyword">var</span> rl = readline.createInterface(process.stdin, process.stdout);
   rl.question(<span class="hljs-string">'Press enter to leave...\n'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(answer)</span> {</span>
     app_server.close();
-    process.exit(<span class="hljs-number">1</span>)
+    process.exit(<span class="hljs-number">0</span>)
   });
 
 }(<span class="hljs-keyword">typeof</span> exports === <span class="hljs-string">'object'</span> &amp;&amp; exports || <span class="hljs-keyword">this</span>));</pre></div>
