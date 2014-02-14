@@ -319,62 +319,53 @@ module.exports = <span class="hljs-function"><span class="hljs-keyword">function
 
         
           <div class='highlight'><pre>        output:<span class="hljs-literal">null</span>,
-
-        meta_dir:<span class="hljs-string">''</span>
       });
 
       <span class="hljs-keyword">var</span> web_server_paths = options.web_server_paths;
       <span class="hljs-keyword">var</span> host = options.host;
       <span class="hljs-keyword">var</span> port = options.port?options.port:<span class="hljs-string">""</span>;
       <span class="hljs-keyword">var</span> ssl_port = options.ssl_port?options.ssl_port:<span class="hljs-string">""</span>;
-      <span class="hljs-keyword">var</span> web_server_log = options.web_server_log;
       <span class="hljs-keyword">var</span> inject_assets = options.inject_assets;
-
-      <span class="hljs-keyword">var</span> meta_dir = options.meta_dir;
-
 
       <span class="hljs-keyword">var</span> done = <span class="hljs-keyword">this</span>.async();
 
-      <span class="hljs-keyword">var</span> webserver           = ph_libutil.webserver;
-      <span class="hljs-keyword">var</span> router_factory      = ph_libutil.router;
-      <span class="hljs-keyword">var</span> optimizer_factory   = ph_libutil.optimizer;
-      <span class="hljs-keyword">var</span> meta_factory        = ph_libutil.meta;
+      <span class="hljs-keyword">var</span> urls = unique_urls(options.urls);
+      grunt.log.ok(<span class="hljs-string">"Running "</span>+urls);
+      <span class="hljs-keyword">var</span> args = forge_yslow_args(options);
 
-      <span class="hljs-keyword">var</span> config = grunt.config.get();
+      <span class="hljs-keyword">if</span>( host+port+ssl_port != <span class="hljs-string">''</span> ){</pre></div>
+        
+      
+        
+        <p>get phantomizer main instance</p>
 
-      <span class="hljs-keyword">var</span> meta_manager = <span class="hljs-keyword">new</span> meta_factory(process.cwd(), meta_dir);
-      <span class="hljs-keyword">var</span> optimizer = <span class="hljs-keyword">new</span> optimizer_factory(meta_manager, config, grunt);
-      <span class="hljs-keyword">var</span> router = <span class="hljs-keyword">new</span> router_factory(config.routing);
-
-      router.load(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
-
-        <span class="hljs-keyword">if</span>( host+port+ssl_port != <span class="hljs-string">''</span> ){
-          webserver = <span class="hljs-keyword">new</span> webserver(router,optimizer,meta_manager,grunt, web_server_paths);
+        
+          <div class='highlight'><pre>        <span class="hljs-keyword">var</span> phantomizer = ph_libutil.get(<span class="hljs-string">"main"</span>);
+        phantomizer.create_webserver(web_server_paths,<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(webserver)</span>{</span>
           webserver.enable_dashboard(<span class="hljs-literal">false</span>);
           webserver.enable_build(<span class="hljs-literal">false</span>);
           webserver.enable_assets_inject(inject_assets);
 
           webserver.start(port, ssl_port, host);
-        }
 
-        <span class="hljs-keyword">var</span> urls = unique_urls(options.urls);
-        grunt.log.ok(<span class="hljs-string">"Running "</span>+urls);
-        <span class="hljs-keyword">var</span> args = forge_yslow_args(options);
+          <span class="hljs-keyword">var</span> yslow_process = process_yslow_output(options.format,args,urls,<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(responses)</span>{</span>
 
-        <span class="hljs-keyword">var</span> yslow_process = process_yslow_output(options.format,args,urls,<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(responses)</span>{</span>
+            end_message(urls,responses);
+            write_yslow_output(options.format,options.output,responses,options.readable);
 
-          end_message(urls,responses);
-          write_yslow_output(options.format,options.output,responses,options.readable);
-          done();
+            webserver.stop(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+              done();
+            });
+
+          });
+          yslow_process.stdout.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
+            <span class="hljs-keyword">if</span>(options.output==<span class="hljs-string">"-"</span>){
+              grunt.log.write(data.toString());
+            }
+          });
+
         });
-        yslow_process.stdout.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(data)</span> {</span>
-          <span class="hljs-keyword">if</span>(options.output==<span class="hljs-string">"-"</span>){
-            grunt.log.write(data.toString());
-          }
-        });
-
-      });
-
+      }
     });</pre></div>
         
       

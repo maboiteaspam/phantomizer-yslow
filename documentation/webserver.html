@@ -136,6 +136,7 @@
         
           <div class='highlight'><pre>  <span class="hljs-keyword">var</span> rl = readline.createInterface(process.stdin, process.stdout);
   rl.question(<span class="hljs-string">'Press enter to leave...\n'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(answer)</span> {</span>
+    rl.close();
     app_server.close();
     process.exit(<span class="hljs-number">0</span>)
   });
