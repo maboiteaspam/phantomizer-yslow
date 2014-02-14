@@ -125,7 +125,7 @@ module.exports = function(grunt) {
       var args = forge_yslow_args(options);
 
       if( host+port+ssl_port != '' ){
-// get phantomizer main instance
+        // get phantomizer main instance
         var phantomizer = ph_libutil.get("main");
         phantomizer.create_webserver(web_server_paths,function(webserver){
           webserver.enable_dashboard(false);
