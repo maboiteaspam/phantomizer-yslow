@@ -110,62 +110,48 @@ module.exports = function(grunt) {
         readable:false,
         // specify output path
         output:null,
-
-        meta_dir:''
       });
 
       var web_server_paths = options.web_server_paths;
       var host = options.host;
       var port = options.port?options.port:"";
       var ssl_port = options.ssl_port?options.ssl_port:"";
-      var web_server_log = options.web_server_log;
       var inject_assets = options.inject_assets;
-
-      var meta_dir = options.meta_dir;
-
 
       var done = this.async();
 
-      var webserver           = ph_libutil.webserver;
-      var router_factory      = ph_libutil.router;
-      var optimizer_factory   = ph_libutil.optimizer;
-      var meta_factory        = ph_libutil.meta;
+      var urls = unique_urls(options.urls);
+      grunt.log.ok("Running "+urls);
+      var args = forge_yslow_args(options);
 
-      var config = grunt.config.get();
-
-      var meta_manager = new meta_factory(process.cwd(), meta_dir);
-      var optimizer = new optimizer_factory(meta_manager, config, grunt);
-      var router = new router_factory(config.routing);
-
-      router.load(function(){
-
-        if( host+port+ssl_port != '' ){
-          webserver = new webserver(router,optimizer,meta_manager,grunt, web_server_paths);
+      if( host+port+ssl_port != '' ){
+// get phantomizer main instance
+        var phantomizer = ph_libutil.get("main");
+        phantomizer.create_webserver(web_server_paths,function(webserver){
           webserver.enable_dashboard(false);
           webserver.enable_build(false);
           webserver.enable_assets_inject(inject_assets);
 
           webserver.start(port, ssl_port, host);
-        }
 
-        var urls = unique_urls(options.urls);
-        grunt.log.ok("Running "+urls);
-        var args = forge_yslow_args(options);
+          var yslow_process = process_yslow_output(options.format,args,urls,function(responses){
 
-        var yslow_process = process_yslow_output(options.format,args,urls,function(responses){
+            end_message(urls,responses);
+            write_yslow_output(options.format,options.output,responses,options.readable);
 
-          end_message(urls,responses);
-          write_yslow_output(options.format,options.output,responses,options.readable);
-          done();
+            webserver.stop(function(){
+              done();
+            });
+
+          });
+          yslow_process.stdout.on('data', function (data) {
+            if(options.output=="-"){
+              grunt.log.write(data.toString());
+            }
+          });
+
         });
-        yslow_process.stdout.on('data', function (data) {
-          if(options.output=="-"){
-            grunt.log.write(data.toString());
-          }
-        });
-
-      });
-
+      }
     });
 
   // helper functions
