@@ -4,7 +4,6 @@ module.exports = function(grunt) {
 
   var fs = require("fs");
 
-  var childProcess = require('child_process');
   var phantomjs = require('phantomjs');
   var yslow = require('../lib/main.js');
   var ph_libutil = require("phantomizer-libutil");
