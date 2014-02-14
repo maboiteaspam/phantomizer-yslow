@@ -126,7 +126,8 @@ module.exports = function(grunt) {
 
       if( host+port+ssl_port != '' ){
         // get phantomizer main instance
-        var phantomizer = ph_libutil.get("main");
+        var Phantomizer = ph_libutil.Phantomizer;
+        var phantomizer = new Phantomizer(process.cwd(),grunt);
         phantomizer.create_webserver(web_server_paths,function(webserver){
           webserver.enable_dashboard(false);
           webserver.enable_build(false);
